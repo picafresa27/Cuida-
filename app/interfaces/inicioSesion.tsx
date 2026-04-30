@@ -1,11 +1,19 @@
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
+  const router = useRouter();
+
   // Estados para guardar lo que el usuario escribe
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+    // Navega a la interfaz de inicio de paciente
+    // Asegúrate de que el archivo se llame homePaciente.tsx o ajusta el nombre aquí
+    router.push('../interfaces/inicioPaciente'); 
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -61,7 +69,7 @@ export default function LoginScreen() {
 
             {/* Botones */}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.botonPrimario}>
+              <TouchableOpacity style={styles.botonPrimario} onPress={handleLogin} >
                 <Text style={styles.textoBlanco}>Entrar</Text>
               </TouchableOpacity>
 
