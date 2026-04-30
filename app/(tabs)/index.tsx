@@ -22,15 +22,17 @@ export default function WelcomeScreen() {
 
         {/* Botones */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.botonPrimario}>
-            <Text style={styles.textoBlanco}>Iniciar sesión</Text>
-          </TouchableOpacity>
-
-          <Link href="/interfaces/inicioSesion" asChild>
-            <TouchableOpacity style={styles.botonSecundario}>
-              <Text style={styles.textoAzul}>Crear cuenta</Text>
+           <Link href="/interfaces/inicioSesion" asChild>
+            <TouchableOpacity style={styles.botonPrimario}>
+              <Text style={styles.textoBlanco}>Iniciar sesión</Text>
             </TouchableOpacity>
           </Link>
+        {/*@ts-ignore*/}
+        <Link href="/interfaces/registro" asChild>
+          <TouchableOpacity style={styles.botonSecundario}>
+            <Text style={styles.textoAzul}>Crear cuenta</Text>
+          </TouchableOpacity>
+        </Link>
         </View>
 
         {/* Texto al pie */}

@@ -74,6 +74,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
 
               {/* Enlace a la otra pantalla si ya tienes el archivo registro.tsx */}
+              {/*@ts-ignore*/}
               <Link href="/interfaces/registro" asChild>
                 <TouchableOpacity style={styles.botonSecundario}>
                   <Text style={styles.textoAzul}>Crear cuenta</Text>
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4A5568',
+    color: '#4a5568',
     marginBottom: 8,
     marginLeft: 4,
   },
