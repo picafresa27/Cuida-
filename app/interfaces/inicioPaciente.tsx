@@ -1,7 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function HomePaciente() {
+  const { nombre } = useLocalSearchParams();
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -9,7 +11,7 @@ export default function HomePaciente() {
         {/* Encabezado */}
         <View style={styles.header}>
           <Text style={styles.brand}>Cuida+</Text>
-          <Text style={styles.welcome}>Hola, Edgar</Text>
+          <Text style={styles.welcome}>Hola, {nombre || 'Usuario'}</Text>
           <Text style={styles.subtitle}>Encuentra especialidades, agenda tu próxima cita y revisa tus consultas activas.</Text>
         </View>
 

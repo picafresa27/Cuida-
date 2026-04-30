@@ -1,6 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -9,10 +9,37 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async() => {
     // Navega a la interfaz de inicio de paciente
     // Asegúrate de que el archivo se llame homePaciente.tsx o ajusta el nombre aquí
-    router.push('../interfaces/inicioPaciente'); 
+    if (!email || !password) {
+      Alert.alert("Error", "Completa todos los campos");
+      return;
+    }
+    try {
+    const res = await fetch("https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/usuarios");
+    const usuarios = await res.json();
+
+    // Buscar usuario
+    const usuario = usuarios.find(
+      (u: any) => u.correo.toLowerCase() === email.toLowerCase() && u.password === password
+    );
+
+    if (!usuario) {
+      Alert.alert("Error", "Usuario o contraseña incorrectos");
+      return;
+    }
+
+    // SI EXISTE → entra y manda el nombre
+    router.replace({
+      pathname: '/interfaces/inicioPaciente',
+      params: { nombre: usuario.nombre }
+    });
+
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", "No se pudo conectar al servidor");
+    }
   };
 
   return (
