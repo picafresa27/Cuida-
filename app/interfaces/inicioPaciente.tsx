@@ -1,12 +1,14 @@
+import { useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function HomePaciente() {
+  const router = useRouter();
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* Encabezado */}
+        {/* Titulos */}
         <View style={styles.header}>
           <Text style={styles.brand}>Cuida+</Text>
           <Text style={styles.welcome}>Hola, Edgar</Text>
@@ -22,14 +24,16 @@ export default function HomePaciente() {
           />
         </View>
 
-        {/* Menú de Opciones (Tarjetas pequeñas) */}
+        {/* Menú de Opciones */}
         <View style={styles.menuGrid}>
-          <TouchableOpacity style={styles.menuCard}>
+          <TouchableOpacity style={styles.menuCard} 
+            onPress={() => router.push('../interfaces/buscarMedico')}>
             <Text style={styles.menuTitle}>Buscar médico</Text>
             <Text style={styles.menuSubtitle}>Especialidades y perfiles</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuCard}>
+          <TouchableOpacity style={styles.menuCard}
+            onPress={() => router.push('../interfaces/agendarCita')}>
             <Text style={styles.menuTitle}>Mis citas</Text>
             <Text style={styles.menuSubtitle}>Próximas y pasadas</Text>
           </TouchableOpacity>
@@ -40,7 +44,7 @@ export default function HomePaciente() {
           </TouchableOpacity>
         </View>
 
-        {/* Tarjeta de Próxima Cita */}
+        {/* Cita proxima */}
         <View style={styles.appointmentCard}>
           <Text style={styles.sectionLabel}>Próxima cita</Text>
           <Text style={styles.doctorName}>Cardiología - Dra. Ana Beltrán</Text>
@@ -52,7 +56,7 @@ export default function HomePaciente() {
           </View>
         </View>
 
-        {/* Botón Principal */}
+        {/* Botón nueva cita */}
         <TouchableOpacity style={styles.mainButton}>
           <Text style={styles.mainButtonText}>Agendar nueva cita</Text>
         </TouchableOpacity>
@@ -74,10 +78,11 @@ export default function HomePaciente() {
   );
 }
 
+{/* Estilos */}
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7FAFC', // Un gris muy claro/azulado de fondo
+    backgroundColor: '#F7FAFC', 
   },
   scrollContent: {
     paddingHorizontal: 20,
