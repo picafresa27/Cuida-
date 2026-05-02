@@ -1,15 +1,27 @@
-import { Link, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Link, useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function LoginScreen() {
   const router = useRouter();
 
   // Estados para guardar lo que el usuario escribe
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleLogin = async() => {
+  const handleLogin = async () => {
     // Navega a la interfaz de inicio de paciente
     // Asegúrate de que el archivo se llame homePaciente.tsx o ajusta el nombre aquí
     if (!email || !password) {
@@ -17,25 +29,28 @@ export default function LoginScreen() {
       return;
     }
     try {
-    const res = await fetch("https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/usuarios");
-    const usuarios = await res.json();
+      const res = await fetch(
+        "https://supreme-happiness-7v5j4g4q6w473rjr6-3000.app.github.dev/",
+      );
+      const usuarios = await res.json();
 
-    // Buscar usuario
-    const usuario = usuarios.find(
-      (u: any) => u.correo.toLowerCase() === email.toLowerCase() && u.password === password
-    );
+      // Buscar usuario
+      const usuario = usuarios.find(
+        (u: any) =>
+          u.correo.toLowerCase() === email.toLowerCase() &&
+          u.password === password,
+      );
 
-    if (!usuario) {
-      Alert.alert("Error", "Usuario o contraseña incorrectos");
-      return;
-    }
+      if (!usuario) {
+        Alert.alert("Error", "Usuario o contraseña incorrectos");
+        return;
+      }
 
-    // SI EXISTE → entra y manda el nombre
-    router.replace({
-      pathname: '/interfaces/inicioPaciente',
-      params: { nombre: usuario.nombre }
-    });
-
+      // SI EXISTE → entra y manda el nombre
+      router.replace({
+        pathname: "/interfaces/inicioPaciente",
+        params: { nombre: usuario.nombre },
+      });
     } catch (error) {
       console.log(error);
       Alert.alert("Error", "No se pudo conectar al servidor");
@@ -45,15 +60,14 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* KeyboardAvoidingView evita que el teclado tape los inputs al escribir */}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          
           {/* Logo */}
-          <Image 
-            source={require('../img/logo_cuida+.jpg')} 
+          <Image
+            source={require("../img/logo_cuida+.jpg")}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -61,16 +75,16 @@ export default function LoginScreen() {
           {/* Encabezado */}
           <Text style={styles.titulo}>Iniciar sesión</Text>
           <Text style={styles.subtitulo}>
-            Accede a tu cuenta para gestionar citas, consultas y seguimiento médico.
+            Accede a tu cuenta para gestionar citas, consultas y seguimiento
+            médico.
           </Text>
 
           {/* Formulario */}
           <View style={styles.form}>
-            
             {/* Input Correo */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Correo electrónico</Text>
-              <TextInput 
+              <TextInput
                 style={styles.input}
                 placeholder="correo@gmail.com"
                 placeholderTextColor="#A0AEC0"
@@ -84,7 +98,7 @@ export default function LoginScreen() {
             {/* Input Contraseña */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Contraseña</Text>
-              <TextInput 
+              <TextInput
                 style={styles.input}
                 placeholder=".........."
                 placeholderTextColor="#A0AEC0"
@@ -96,7 +110,10 @@ export default function LoginScreen() {
 
             {/* Botones */}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.botonPrimario} onPress={handleLogin} >
+              <TouchableOpacity
+                style={styles.botonPrimario}
+                onPress={handleLogin}
+              >
                 <Text style={styles.textoBlanco}>Entrar</Text>
               </TouchableOpacity>
 
@@ -113,7 +130,6 @@ export default function LoginScreen() {
             <TouchableOpacity style={styles.forgotPass}>
               <Text style={styles.textoForgot}>¿Olvidaste tu contraseña?</Text>
             </TouchableOpacity>
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -124,10 +140,10 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF', // Blanco puro
+    backgroundColor: "#FFFFFF", // Blanco puro
   },
   scrollContent: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 30,
     paddingVertical: 40,
   },
@@ -138,80 +154,80 @@ const styles = StyleSheet.create({
   },
   titulo: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1A202C',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#1A202C",
+    textAlign: "center",
     marginBottom: 8,
   },
   subtitulo: {
     fontSize: 14,
-    color: '#718096',
-    textAlign: 'center',
+    color: "#718096",
+    textAlign: "center",
     lineHeight: 20,
     marginBottom: 35,
     paddingHorizontal: 10,
   },
   form: {
-    width: '100%',
+    width: "100%",
   },
   inputGroup: {
     marginBottom: 20,
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#4a5568',
+    fontWeight: "600",
+    color: "#4a5568",
     marginBottom: 8,
     marginLeft: 4,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
     borderRadius: 12,
     paddingVertical: 15,
     paddingHorizontal: 15,
     fontSize: 16,
-    color: '#2D3748',
+    color: "#2D3748",
   },
   buttonContainer: {
     marginTop: 10,
     gap: 15,
   },
   botonPrimario: {
-    backgroundColor: '#345195', // Azul Cuida+
+    backgroundColor: "#345195", // Azul Cuida+
     paddingVertical: 18,
     borderRadius: 12,
-    alignItems: 'center',
-    width: '100%',
+    alignItems: "center",
+    width: "100%",
   },
   botonSecundario: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingVertical: 18,
     borderRadius: 12,
-    alignItems: 'center',
-    width: '100%',
+    alignItems: "center",
+    width: "100%",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
   },
   textoBlanco: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   textoAzul: {
-    color: '#2D3748',
+    color: "#2D3748",
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   forgotPass: {
     marginTop: 30,
-    alignItems: 'center',
+    alignItems: "center",
   },
   textoForgot: {
-    color: '#41A69A', // El verde turquesa de tu logo para el link
+    color: "#41A69A", // El verde turquesa dellogo para el link
     fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
 });

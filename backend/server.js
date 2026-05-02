@@ -36,11 +36,11 @@ app.get("/", (req, res) => {
 app.post("/usuarios", (req, res) => {
   console.log("BODY RECIBIDO:", req.body);
   const { nombre, correo, telefono, edad, genero, password } = req.body;
-  
+
   // Validaciones básicas
   if (!nombre || !correo || !password || !telefono || !edad || !genero) {
     return res.status(400).json({
-      error: "Todos los campos son obligatorios"
+      error: "Todos los campos son obligatorios",
     });
   }
 
@@ -51,7 +51,7 @@ app.post("/usuarios", (req, res) => {
     telefono,
     edad,
     genero,
-    password
+    password,
   };
 
   usuarios.push(nuevoUsuario);
@@ -60,7 +60,7 @@ app.post("/usuarios", (req, res) => {
 
   res.json({
     mensaje: "Usuario creado correctamente",
-    usuario: nuevoUsuario
+    usuario: nuevoUsuario,
   });
 });
 
@@ -74,7 +74,7 @@ app.get("/usuarios", (req, res) => {
 app.get("/usuarios/:id", (req, res) => {
   const id = parseInt(req.params.id);
 
-  const usuario = usuarios.find(u => u.id === id);
+  const usuario = usuarios.find((u) => u.id === id);
 
   if (!usuario) {
     return res.status(404).json({ error: "Usuario no encontrado" });
@@ -87,7 +87,7 @@ app.get("/usuarios/:id", (req, res) => {
 app.delete("/usuarios/:id", (req, res) => {
   const id = parseInt(req.params.id);
 
-  usuarios = usuarios.filter(u => u.id !== id);
+  usuarios = usuarios.filter((u) => u.id !== id);
 
   res.json({ mensaje: "Usuario eliminado" });
 });
