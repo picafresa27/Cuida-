@@ -1,6 +1,6 @@
-import { Picker } from "@react-native-picker/picker"; // Importar el Picker
+import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   SafeAreaView,
@@ -9,61 +9,37 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View, // Importado para el contenedor del Picker
+  View,
 } from "react-native";
 
 export default function Registro() {
   // Estados
   const [nombre, setNombre] = useState("");
+  const [apellidos, setApellidos] = useState(""); // Nuevo: Azure pide Apellidos
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [edad, setEdad] = useState("");
+  const [fechaNacimiento, setFechaNacimiento] = useState(""); // Cambiado: Azure pide DATE
   const [genero, setGenero] = useState("");
   const [password, setPassword] = useState("");
   const [confirmar, setConfirmar] = useState("");
 
-  // Validación de edad en tiempo real
-  const manejarCambioEdad = (texto: string) => {
-    // Eliminar cualquier caracter que no sea número
-    const soloNumeros = texto.replace(/[^0-9]/g, "");
-    if (soloNumeros === "") {
-      setEdad("");
-      return;
-    }
-
-    const valorNumerico = parseInt(soloNumeros);
-    if (valorNumerico <= 100) {
-      setEdad(soloNumeros);
-    } else {
-      Alert.alert("Valor inválido.");
-    }
-  };
-
+  // Formateador de teléfono (Mantiene tu lógica original)
   const manejarCambioTelefono = (texto: string) => {
     const soloNumeros = texto.replace(/\D/g, "");
-    // Construir el formato XXX-XXX-XXXX
     let formateado = "";
     if (soloNumeros.length > 0) {
-      // Primer grupo (3 dígitos)
       formateado = soloNumeros.slice(0, 3);
-      if (soloNumeros.length > 3) {
-        // Segundo grupo (3 dígitos)
-        formateado += " " + soloNumeros.slice(3, 6);
-      }
-      if (soloNumeros.length > 6) {
-        // Tercer grupo (4 dígitos)
-        formateado += " " + soloNumeros.slice(6, 10);
-      }
+      if (soloNumeros.length > 3) formateado += " " + soloNumeros.slice(3, 6);
+      if (soloNumeros.length > 6) formateado += " " + soloNumeros.slice(6, 10);
     }
-
     setTelefono(formateado);
   };
 
-  // Función para crear usuario
+  // Función para crear usuario conectando al Backend
   const crearUsuario = async () => {
-    // Validaciones
-    if (!nombre || !correo || !password || !telefono || !edad || !genero) {
-      Alert.alert("Error", "Completa los campos obligatorios");
+    // 1. Validaciones básicas
+    if (!nombre || !apellidos || !correo || !password || !telefono || !fechaNacimiento || !genero) {
+      Alert.alert("Error", "Completa todos los campos obligatorios");
       return;
     }
 
@@ -73,77 +49,86 @@ export default function Registro() {
     }
 
     try {
-      const res = await fetch(
-        "https://supreme-happiness-7v5j4g4q6w473rjr6-3000.app.github.dev/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            nombre,
-            correo,
-            telefono,
-            edad,
-            genero,
-            password,
-          }),
+      /**
+       * IMPORTANTE: 
+       * Reemplaza '192.168.X.X' con la IP que obtuviste en el comando 'ipconfig'.
+       */
+      const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/usuarios";
+      
+      const res = await fetch(URL_BACKEND, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
-
-      //const data = await res.json();
-      const text = await res.text();
-      console.log("RESPUESTA RAW:", text);
-
-      const data = text ? JSON.parse(text) : {};
-
-      console.log(data);
-      Alert.alert("Éxito", "Usuario creado correctamente");
-
-      router.replace({
-        pathname: "/interfaces/inicioPaciente",
-        params: { nombre: nombre },
+        body: JSON.stringify({
+          nombre: nombre,
+          apellidos: apellidos,
+          fechaNacimiento: fechaNacimiento, // Debe ser formato YYYY-MM-DD
+          telefono: telefono,
+          correo: correo,
+          genero: genero === "Hombre" ? "M" : "F", // Azure espera un solo caracter (CHAR(1))
+          password: password,
+        }),
       });
 
-      // Limpiar campos
-      setNombre("");
-      setCorreo("");
-      setTelefono("");
-      setEdad("");
-      setGenero("");
-      setPassword("");
-      setConfirmar("");
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+
+      if (res.ok) {
+        Alert.alert("Éxito", "¡Paciente registrado en CuidaPlus!");
+        router.replace({
+          pathname: "/interfaces/inicioPaciente",
+          params: { nombre: nombre },
+        });
+
+        // Limpiar campos
+        setNombre("");
+        setApellidos("");
+        setCorreo("");
+        setTelefono("");
+        setFechaNacimiento("");
+        setGenero("");
+        setPassword("");
+        setConfirmar("");
+      } else {
+        Alert.alert("Error de Registro", data.error || "No se pudo guardar el usuario");
+      }
     } catch (error) {
-      console.log(error);
-      Alert.alert("Error", "No se pudo conectar al servidor");
+      console.log("Error de conexión:", error);
+      Alert.alert("Error", "No se pudo conectar al servidor. Verifica que el backend esté corriendo y la IP sea correcta.");
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
         <Text style={styles.logo}>Cuida+</Text>
         <Text style={styles.title}>Crear cuenta</Text>
         <Text style={styles.subtitle}>
-          Completa tus datos para acceder a citas, pagos y seguimiento médico.
+          Completa tus datos para acceder a citas y seguimiento médico.
         </Text>
 
-        {/* Inputs */}
-        <Text style={styles.label}>Nombre completo</Text>
+        <Text style={styles.label}>Nombres</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ejem. Edgar López"
-          placeholderTextColor="#A0AEC0"
+          placeholder="Ejem. Edgar"
           value={nombre}
           onChangeText={setNombre}
         />
 
-        <Text style={styles.label}>Correo</Text>
+        <Text style={styles.label}>Apellidos</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ejem. López"
+          value={apellidos}
+          onChangeText={setApellidos}
+        />
+
+        <Text style={styles.label}>Correo electrónico</Text>
         <TextInput
           style={styles.input}
           placeholder="correo@email.com"
-          placeholderTextColor="#A0AEC0"
+          keyboardType="email-address"
           value={correo}
           onChangeText={setCorreo}
         />
@@ -151,27 +136,21 @@ export default function Registro() {
         <Text style={styles.label}>Teléfono</Text>
         <TextInput
           style={styles.input}
-          placeholder="667 123 4567" // Placeholder con espacios para guiar al usuario
-          placeholderTextColor="#A0AEC0"
+          placeholder="667 123 4567"
           value={telefono}
           onChangeText={manejarCambioTelefono}
           keyboardType="numeric"
-          maxLength={12} // 10 dígitos + 2 espacios
+          maxLength={12}
         />
 
-        {/* Input de Edad con Teclado Numérico */}
-        <Text style={styles.label}>Edad</Text>
+        <Text style={styles.label}>Fecha de Nacimiento (YYYY-MM-DD)</Text>
         <TextInput
           style={styles.input}
-          placeholder="20"
-          placeholderTextColor="#A0AEC0"
-          value={edad}
-          onChangeText={manejarCambioEdad}
-          keyboardType="numeric" // Activa el teclado numérico
-          maxLength={3} // Limita a 3 dígitos (ej. 100)
+          placeholder="1995-05-20"
+          value={fechaNacimiento}
+          onChangeText={setFechaNacimiento}
         />
 
-        {/* Lista Desplegable de Género */}
         <Text style={styles.label}>Género</Text>
         <View style={styles.pickerContainer}>
           <Picker
@@ -179,14 +158,9 @@ export default function Registro() {
             onValueChange={(itemValue) => setGenero(itemValue)}
             style={styles.picker}
           >
-            <Picker.Item
-              label="Selecciona un género"
-              value=""
-              enabled={false}
-            />
+            <Picker.Item label="Selecciona un género" value="" enabled={false} />
             <Picker.Item label="Hombre" value="Hombre" />
             <Picker.Item label="Mujer" value="Mujer" />
-            <Picker.Item label="Otro" value="Otro" />
           </Picker>
         </View>
 
@@ -195,111 +169,37 @@ export default function Registro() {
           style={styles.input}
           secureTextEntry
           placeholder="********"
-          placeholderTextColor="#A0AEC0"
           value={password}
           onChangeText={setPassword}
         />
 
-        <Text style={styles.label}>Confirmar</Text>
+        <Text style={styles.label}>Confirmar Contraseña</Text>
         <TextInput
           style={styles.input}
           secureTextEntry
           placeholder="********"
-          placeholderTextColor="#A0AEC0"
           value={confirmar}
           onChangeText={setConfirmar}
         />
 
-        {/* Botón */}
         <TouchableOpacity style={styles.button} onPress={crearUsuario}>
-          <Text style={styles.buttonText}>Crear cuenta</Text>
+          <Text style={styles.buttonText}>Crear cuenta en Cuida+</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F4F6F8",
-  },
-  content: {
-    padding: 20,
-  },
-  logo: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#3A5BA0",
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-  },
-  subtitle: {
-    color: "#6b7280",
-    marginBottom: 20,
-  },
-  label: {
-    marginTop: 10,
-    marginBottom: 5,
-    color: "#4a5568",
-    fontWeight: "600",
-  },
-  input: {
-    backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#6b7280",
-  },
-  // Nuevos estilos para el Picker
-  pickerContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#6b7280",
-    overflow: "hidden", // Importante para que el radio del borde se vea bien
-    justifyContent: "center",
-  },
-  picker: {
-    height: 55, // Altura similar a tus inputs
-    width: "100%",
-  },
-  methodContainer: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 5,
-  },
-  methodBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: "#E5E7EB",
-  },
-  methodActive: {
-    backgroundColor: "#3A5BA0",
-  },
-  methodActiveAlt: {
-    backgroundColor: "#A7D8D8",
-  },
-  methodText: {
-    color: "#374151",
-    fontWeight: "600",
-  },
-  methodTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  button: {
-    marginTop: 25,
-    backgroundColor: "#3A5BA0",
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  container: { flex: 1, backgroundColor: "#F4F6F8" },
+  content: { padding: 20 },
+  logo: { fontSize: 18, fontWeight: "600", color: "#3A5BA0", marginBottom: 10 },
+  title: { fontSize: 26, fontWeight: "bold" },
+  subtitle: { color: "#6b7280", marginBottom: 20 },
+  label: { marginTop: 10, marginBottom: 5, color: "#4a5568", fontWeight: "600" },
+  input: { backgroundColor: "#fff", padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e0" },
+  pickerContainer: { backgroundColor: "#fff", borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e0", overflow: "hidden" },
+  picker: { height: 55, width: "100%" },
+  button: { marginTop: 25, backgroundColor: "#3A5BA0", padding: 15, borderRadius: 12, alignItems: "center" },
+  buttonText: { color: "#fff", fontWeight: "bold" },
 });

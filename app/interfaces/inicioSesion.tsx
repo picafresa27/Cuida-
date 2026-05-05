@@ -1,5 +1,5 @@
 import { Link, useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   Image,
@@ -28,18 +28,27 @@ export default function LoginScreen() {
       Alert.alert("Error", "Completa todos los campos");
       return;
     }
+
     try {
       const res = await fetch(
-        "https://supreme-happiness-7v5j4g4q6w473rjr6-3000.app.github.dev/",
+        "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/usuarios"
       );
+      
       const usuarios = await res.json();
 
-      // Buscar usuario
-      const usuario = usuarios.find(
-        (u: any) =>
-          u.correo.toLowerCase() === email.toLowerCase() &&
-          u.password === password,
-      );
+     // Buscar usuario a prueba de balas
+      const usuario = usuarios.find((u: any) => {
+        if (!u.correo || !u.password) return false;
+
+        // .trim() elimina espacios accidentales al inicio y al final
+        return (
+          u.correo.trim().toLowerCase() === email.trim().toLowerCase() &&
+          u.password.trim() === password.trim()
+        );
+      });
+
+      console.log("1. Yo escribí -> Correo:", email, "| Pass:", password);
+      console.log("2. SQL me mandó (Primer usuario) ->", usuarios[0]);
 
       if (!usuario) {
         Alert.alert("Error", "Usuario o contraseña incorrectos");
