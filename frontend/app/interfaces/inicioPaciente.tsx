@@ -1,6 +1,6 @@
-import { useRouter, useLocalSearchParams } from "expo-router";
-import React, { useEffect } from "react"; 
-import { io } from "socket.io-client"; 
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect } from "react";
+import { io } from "socket.io-client";
 
 import {
   SafeAreaView,
@@ -96,7 +96,10 @@ export default function HomePaciente() {
         </View>
 
         {/* Botón nueva cita */}
-        <TouchableOpacity style={styles.mainButton}>
+        <TouchableOpacity 
+          style={styles.mainButton} 
+          onPress={() => router.push("/interfaces/agendarCita")}
+        >
           <Text style={styles.mainButtonText}>Agendar nueva cita</Text>
         </TouchableOpacity>
 
