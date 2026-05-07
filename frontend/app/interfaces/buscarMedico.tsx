@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React from "react";
+//import React from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-const MEDICOS = [
+/*const MEDICOS = [
   {
     id: "1",
     nombre: "Dra. Ana Beltrán",
@@ -32,10 +32,37 @@ const MEDICOS = [
     disponible: "Jue 12:00",
     calificacion: "4.7",
   },
-];
+];*/
+
+import React, { useEffect, useState } from "react";
 
 export default function BuscarMedico() {
   const router = useRouter();
+
+  const [medicos, setMedicos] = useState<any[]>([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  obtenerDoctores();
+}, []);
+
+const obtenerDoctores = async () => {
+  try {
+    const response = await fetch(
+      "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/doctores"
+    );
+
+    const data = await response.json();
+
+    setMedicos(data);
+
+  } catch (error) {
+    console.log("Error al obtener doctores:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -81,23 +108,38 @@ export default function BuscarMedico() {
 
       {/* Lista de doctores */}
       <ScrollView contentContainerStyle={styles.listContainer}>
-        {MEDICOS.map((medico) => (
-          <View key={medico.id} style={styles.doctorCard}>
+        {medicos.map((medico) => (
+          <View key={medico.idDoctor} style={styles.doctorCard}>
             <View style={styles.cardHeader}>
               <View>
-                <Text style={styles.doctorName}>{medico.nombre}</Text>
+                <Text style={styles.doctorName}>
+                  Dr. {medico.nombre} {medico.apellidos}
+                </Text>
                 <Text style={styles.doctorSpec}>{medico.especialidad}</Text>
                 <Text style={styles.doctorTime}>
-                  Disponible: {medico.disponible}
+                  Disponible: Hoy 10:30
                 </Text>
               </View>
               <View style={styles.ratingBadge}>
-                <Text style={styles.ratingText}>★ {medico.calificacion}</Text>
+                <Text style={styles.ratingText}>★ 4.9</Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.profileButton}>
+            <View style={{ flexDirection: "row" }}>
+            <TouchableOpacity style={[styles.profileButton,{marginLeft: "auto"}]}>
               <Text style={styles.profileButtonText}>Ver perfil</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.profileButton,{ marginLeft: 10 }]} onPress={() => router.push({ pathname: "/interfaces/agendarCita",
+              params: {
+                idDoctor: medico.idDoctor,
+                nombre: medico.nombre,
+                apellidos: medico.apellidos,
+                especialidad: medico.especialidad,
+              },})}
+            >
+            <Text style={styles.profileButtonText}>Agendar Cita</Text>
+            </TouchableOpacity>
+            </View>
           </View>
         ))}
       </ScrollView>

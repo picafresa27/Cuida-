@@ -48,12 +48,17 @@ export default function Registro() {
       return;
     }
 
+    if(password.length < 8){
+      Alert.alert("Error", "La contraseña debe de tener minimo 8 caracteres");
+      return;
+    }
+
     try {
       /**
        * IMPORTANTE: 
        * Reemplaza '192.168.X.X' con la IP que obtuviste en el comando 'ipconfig'.
        */
-      const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/usuarios";
+      const URL_BACKEND = "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/usuarios";
       
       const res = await fetch(URL_BACKEND, {
         method: "POST",

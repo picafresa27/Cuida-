@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -12,6 +12,7 @@ import {
 
 export default function AgendarCita() {
   const router = useRouter();
+  const { idDoctor, nombre, apellidos, especialidad } = useLocalSearchParams();
   const [selectedDay, setSelectedDay] = useState(18);
   const [selectedTime, setSelectedTime] = useState("10:30");
 
@@ -19,6 +20,7 @@ export default function AgendarCita() {
 
   // --- LÓGICA PARA AGENDAR ---
   const handleAgendar = async () => {
+    router.push("/interfaces/metodoPago");
     try {
       // Formateamos los datos para que SQL los entienda
       // La fecha debe ser YYYY-MM-DD
@@ -26,14 +28,14 @@ export default function AgendarCita() {
       // La hora debe ser HH:MM:SS
       const horaFormateada = `${selectedTime}:00`;
 
-      const response = await fetch("https://TU_URL_DE_CODESPACES-3000.app.github.dev/agendar-cita", {
+      const response = await fetch("https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/agendar-cita", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fecha: fechaFormateada,
           hora: horaFormateada,
           idPaciente: 1, // Por ahora fijo, después lo traeremos del login
-          idDoctor: 1,   // Basado en tu tabla de Doctores
+          idDoctor: Number(idDoctor),   // Basado en tu tabla de Doctores
           numeroConsultorio: "4", // El que dice tu diseño
           anticipo: true, // Porque el botón dice "con anticipo"
         }),
@@ -41,7 +43,7 @@ export default function AgendarCita() {
 
       if (response.ok) {
         Alert.alert("¡Cita Agendada!", `Te esperamos el ${selectedDay} de marzo a las ${selectedTime} AM.`, [
-          { text: "OK", onPress: () => router.replace("/(tabs)") }
+          { text: "OK", onPress: () => router.replace("/(tabs)/agenda") }
         ]);
       } else {
         const errorData = await response.json();
@@ -66,9 +68,9 @@ export default function AgendarCita() {
 
         {/* Info del doctor */}
         <View style={styles.doctorCard}>
-          <Text style={styles.doctorName}>Dra. Ana Beltrán</Text>
+          <Text style={styles.doctorName}> Dr. {nombre} {apellidos} </Text>
           <Text style={styles.doctorInfo}>
-            Cardiología · Zona Norte · Consultorio 4
+            {especialidad} · Zona Norte · Consultorio 4
           </Text>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>Anticipo 50%</Text>
@@ -146,7 +148,7 @@ export default function AgendarCita() {
         </View>
 
         {/* Botón con la acción */}
-        <TouchableOpacity style={styles.mainButton} onPress={handleAgendar}>
+        <TouchableOpacity style={styles.mainButton} onPress={handleAgendar} >
           <Text style={styles.mainButtonText}>Continuar con anticipo</Text>
         </TouchableOpacity>
       </ScrollView>

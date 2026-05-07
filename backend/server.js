@@ -54,14 +54,35 @@ app.get("/", (req, res) => {
 //Crear un nuevo Paciente
 app.post("/usuarios", async (req, res) => {
     const { nombre, apellidos, fechaNacimiento, genero, telefono, correo, password } = req.body;
+
     if (!nombre || !apellidos || !fechaNacimiento || !correo || !password) {
-        return res.status(400).json({ 
-            error: "Los campos Nombre, Apellidos, Fecha de Nacimiento, Correo y Password son obligatorios." 
+        return res.status(400).json({
+            error: "Los campos Nombre, Apellidos, Fecha de Nacimiento, Correo y Password son obligatorios."
         });
     }
 
     try {
         const pool = await sql.connect(dbConfig);
+
+        const correoLimpio = correo.trim().toLowerCase();
+
+        // 🔍 VERIFICAR SI EL CORREO YA EXISTE
+        const usuarioExistente = await pool.request()
+            .input('correo', sql.VarChar(100), correoLimpio)
+            .query(`
+                SELECT * 
+                FROM Paciente 
+                WHERE LOWER(Correo) = @correo
+            `);
+
+        // Si encontró registros
+        if (usuarioExistente.recordset.length > 0) {
+            return res.status(400).json({
+                error: "Ya existe una cuenta con este correo electrónico."
+            });
+        }
+
+        // ✅ INSERTAR NUEVO USUARIO
         await pool.request()
             .input('nombres', sql.VarChar(50), nombre)
             .input('apellidos', sql.VarChar(50), apellidos)
@@ -70,16 +91,24 @@ app.post("/usuarios", async (req, res) => {
             .input('tel', sql.VarChar(20), telefono)
             .input('correo', sql.VarChar(100), correo)
             .input('pass', sql.VarChar(255), password)
-            .query(`INSERT INTO Paciente (Nombres, Apellidos, FechaNacimiento, Genero, Telefono, Correo, Password) 
-                    VALUES (@nombres, @apellidos, @fecha, @genero, @tel, @correo, @pass)`);
+            .query(`
+                INSERT INTO Paciente
+                (Nombres, Apellidos, FechaNacimiento, Genero, Telefono, Correo, Password)
+                VALUES
+                (@nombres, @apellidos, @fecha, @genero, @tel, @correo, @pass)
+            `);
 
-        res.json({ 
+        res.json({
             mensaje: "Paciente registrado correctamente en CuidaPlus",
             usuario: { nombre, correo }
         });
+
     } catch (err) {
         console.error("Error en INSERT:", err);
-        res.status(500).json({ error: "No se pudo guardar el paciente en la base de datos." });
+
+        res.status(500).json({
+            error: "No se pudo guardar el paciente en la base de datos."
+        });
     }
 });
 
@@ -100,6 +129,37 @@ app.get("/usuarios", async (req, res) => {
      } catch (err) {
          console.error("Error en SELECT:", err);
         res.status(500).json({ error: "Error al obtener la lista de pacientes." });
+    }
+});
+
+// Obtener lista de todos los Doctores
+app.get("/doctores", async (req, res) => {
+    try {
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request().query(`
+            SELECT
+                IdDoctor AS idDoctor,
+                Nombres AS nombre,
+                Apellidos AS apellidos,
+                Genero AS genero,
+                Telefono AS telefono,
+                Correo AS correo,
+                Especialidad AS especialidad,
+                CedulaProfesional AS cedulaProfesional,
+                Estatus AS estatus,
+                ModalidadRenta AS modalidadRenta
+            FROM Doctor
+        `);
+
+        res.json(result.recordset);
+
+    } catch (err) {
+        console.error("Error en SELECT DOCTORES:", err);
+
+        res.status(500).json({
+            error: "Error al obtener la lista de doctores."
+        });
     }
 });
 

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 
 // 1. CONFIGURACIÓN DEL SOCKET
-const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev";
+const URL_BACKEND = "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/usuarios";
 const socket = io(URL_BACKEND);
 
 export default function HomePaciente() {
@@ -67,7 +67,7 @@ export default function HomePaciente() {
 
           <TouchableOpacity
             style={styles.menuCard}
-            onPress={() => router.push("/interfaces/agendarCita")}
+            onPress={() => router.push("/interfaces/misCitas")}
           >
             <Text style={styles.menuTitle}>Mis citas</Text>
             <Text style={styles.menuSubtitle}>Próximas y pasadas</Text>
@@ -98,7 +98,7 @@ export default function HomePaciente() {
         {/* Botón nueva cita */}
         <TouchableOpacity 
           style={styles.mainButton} 
-          onPress={() => router.push("/interfaces/agendarCita")}
+          onPress={() => router.push("/interfaces/buscarMedico")}
         >
           <Text style={styles.mainButtonText}>Agendar nueva cita</Text>
         </TouchableOpacity>

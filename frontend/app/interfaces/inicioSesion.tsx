@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
     try {
       const res = await fetch(
-        "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/usuarios"
+        "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/usuarios"
       );
       
       const usuarios = await res.json();
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 15,
     fontSize: 16,
-    color: "#2D3748",
+    color: "#2D3748"
   },
   buttonContainer: {
     marginTop: 10,
