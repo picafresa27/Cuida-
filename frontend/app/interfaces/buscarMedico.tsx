@@ -109,13 +109,13 @@ const obtenerDoctores = async () => {
       {/* Lista de doctores */}
       <ScrollView contentContainerStyle={styles.listContainer}>
         {medicos.map((medico) => (
-          <View key={medico.idDoctor} style={styles.doctorCard}>
+          <View key={medico.IdDoctor} style={styles.doctorCard}>
             <View style={styles.cardHeader}>
               <View>
                 <Text style={styles.doctorName}>
-                  Dr. {medico.nombre} {medico.apellidos}
+                  Dr. {medico.Nombres} {medico.Apellidos}
                 </Text>
-                <Text style={styles.doctorSpec}>{medico.especialidad}</Text>
+                <Text style={styles.doctorSpec}>{medico.Especialidad}</Text>
                 <Text style={styles.doctorTime}>
                   Disponible: Hoy 10:30
                 </Text>
@@ -131,10 +131,10 @@ const obtenerDoctores = async () => {
 
             <TouchableOpacity style={[styles.profileButton,{ marginLeft: 10 }]} onPress={() => router.push({ pathname: "/interfaces/agendarCita",
               params: {
-                idDoctor: medico.idDoctor,
-                nombre: medico.nombre,
-                apellidos: medico.apellidos,
-                especialidad: medico.especialidad,
+                idDoctor: medico.IdDoctor,
+                nombre: medico.Nombres,
+                apellidos: medico.Apellidos,
+                especialidad: medico.Especialidad,
               },})}
             >
             <Text style={styles.profileButtonText}>Agendar Cita</Text>

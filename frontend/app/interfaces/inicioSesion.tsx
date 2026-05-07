@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async () => {
+  /*const handleLogin = async () => {
     // Navega a la interfaz de inicio de paciente
     // Asegúrate de que el archivo se llame homePaciente.tsx o ajusta el nombre aquí
     if (!email || !password) {
@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
     try {
       const res = await fetch(
-        "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/usuarios"
+        "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/login"
       );
       
       const usuarios = await res.json();
@@ -64,7 +64,55 @@ export default function LoginScreen() {
       console.log(error);
       Alert.alert("Error", "No se pudo conectar al servidor");
     }
-  };
+  };*/
+
+  const handleLogin = async () => {
+  if (!email || !password) {
+    Alert.alert("Error", "Completa todos los campos");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+  "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/login",
+  {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      correo: email,
+      password: password,
+    }),
+  }
+);
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : {};
+
+    if (!res.ok) {
+      Alert.alert("Error", data.error || "No se pudo iniciar sesión");
+      return;
+    }
+
+    Alert.alert("Éxito", "Inicio de sesión exitoso");
+
+    router.replace({
+      pathname: "/interfaces/inicioPaciente",
+      params: {
+        nombre: data.usuario.nombres,
+      },
+    });
+
+  } catch (error) {
+    console.log("Error login:", error);
+
+    Alert.alert(
+      "Error",
+      "No se pudo conectar al servidor"
+    );
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>
