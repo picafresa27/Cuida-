@@ -3,7 +3,19 @@ const express = require("express");
 const cors = require("cors");
 const sql = require("mssql");
 
+// 1. IMPORTACIONES PARA SOCKET.IO
+const http = require("http");
+const { Server } = require("socket.io");
+
 const app = express();
+
+// 2. CREACIÓN DEL SERVIDOR HTTP Y SOCKET.IO
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*", // Permite que cualquier celular de Expo se conecte
+    }
+});
 
 //Middlewares
 app.use(cors());
@@ -91,8 +103,17 @@ app.get("/usuarios", async (req, res) => {
     }
 });
 
-//Iniciar Servidor
+// 3. LÓGICA DE EVENTOS DE SOCKET.IO
+io.on("connection", (socket) => {
+    console.log("⚡ Un celular se acaba de conectar a Cuida+ con ID:", socket.id);
+
+    socket.on("disconnect", () => {
+        console.log("❌ Un celular se desconectó");
+    });
+});
+
+// 4. ARRANCAR EL SERVIDOR USANDO "server.listen" (NO app.listen)
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor de CuidaPlus corriendo en http://localhost:${PORT}`);
-  });
+server.listen(PORT, () => {
+    console.log(`Servidor de CuidaPlus corriendo con Sockets en el puerto ${PORT} 🚀`);
+});

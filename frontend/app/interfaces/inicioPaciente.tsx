@@ -1,5 +1,6 @@
-import { useRouter } from "expo-router";
-import React from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import React, { useEffect } from "react"; 
+import { io } from "socket.io-client"; 
 
 import {
   SafeAreaView,
@@ -10,11 +11,25 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+
+// 1. CONFIGURACIÓN DEL SOCKET
+const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev";
+const socket = io(URL_BACKEND);
 
 export default function HomePaciente() {
   const { nombre } = useLocalSearchParams();
   const router = useRouter();
+
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("🟢 Conectado al servidor de Cuida+. ID:", socket.id);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -44,7 +59,7 @@ export default function HomePaciente() {
         <View style={styles.menuGrid}>
           <TouchableOpacity
             style={styles.menuCard}
-            onPress={() => router.push("../interfaces/buscarMedico")}
+            onPress={() => router.push("/interfaces/buscarMedico")}
           >
             <Text style={styles.menuTitle}>Buscar médico</Text>
             <Text style={styles.menuSubtitle}>Especialidades y perfiles</Text>
@@ -52,7 +67,7 @@ export default function HomePaciente() {
 
           <TouchableOpacity
             style={styles.menuCard}
-            onPress={() => router.push("../interfaces/agendarCita")}
+            onPress={() => router.push("/interfaces/agendarCita")}
           >
             <Text style={styles.menuTitle}>Mis citas</Text>
             <Text style={styles.menuSubtitle}>Próximas y pasadas</Text>
@@ -85,7 +100,7 @@ export default function HomePaciente() {
           <Text style={styles.mainButtonText}>Agendar nueva cita</Text>
         </TouchableOpacity>
 
-        {/* Especialidades Destacadas */}
+        {/* Especialidades Destacadas (RECUPERADO) */}
         <View style={styles.specialtiesSection}>
           <Text style={styles.sectionLabelBold}>Especialidades destacadas</Text>
           <View style={styles.tagsContainer}>
@@ -108,9 +123,6 @@ export default function HomePaciente() {
   );
 }
 
-{
-  /* Estilos */
-}
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -208,7 +220,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   statusBadge: {
-    backgroundColor: "#E6FFFA", // Verde clarito
+    backgroundColor: "#E6FFFA",
     alignSelf: "flex-start",
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -216,7 +228,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   statusText: {
-    color: "#319795", // Verde oscuro
+    color: "#319795",
     fontSize: 12,
     fontWeight: "bold",
   },

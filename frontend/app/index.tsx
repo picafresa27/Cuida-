@@ -1,21 +1,21 @@
 import { Link } from "expo-router";
 import React from "react";
 import {
-  Image,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function WelcomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Logo y Nombre */}
+        {/* Logo y Nombre - RUTA CORREGIDA */}
         <Image
-          source={require("../img/logo_cuida+.jpg")}
+          source={require("./img/logo_cuida+.jpg")}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -55,7 +55,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f7fafc", //Color blanco
+    backgroundColor: "#f7fafc", 
   },
   content: {
     flex: 1,
@@ -84,11 +84,11 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: "100%",
-    gap: 15, // Espacio entre botones
+    gap: 15,
     marginBottom: 40,
   },
   botonPrimario: {
-    backgroundColor: "#345195", // El azul de tu logo
+    backgroundColor: "#345195", 
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: "center",
@@ -106,13 +106,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-
   textoAzul: {
     color: "#1A1A1A",
     fontSize: 16,
     fontWeight: "600",
   },
-
   pieDePagina: {
     fontSize: 12,
     color: "#9A9A9A",

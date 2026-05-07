@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "CuidaPlus",
+    "slug": "cuida-plus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./app/img/logo_cuida+.jpg",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.tuusuario.cuidaplus"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./app/img/logo_cuida+.jpg"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
