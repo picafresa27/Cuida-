@@ -2,6 +2,7 @@
   "expo": {
     "name": "CuidaPlus",
     "slug": "cuida-plus",
+    "scheme": "cuidaplus",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./app/img/logo_cuida+.jpg",

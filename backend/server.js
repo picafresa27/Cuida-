@@ -132,34 +132,63 @@ app.get("/usuarios", async (req, res) => {
     }
 });
 
-// Obtener lista de todos los Doctores
+// ==========================================
+// RUTA PARA OBTENER LOS DOCTORES (NUEVO)
+// ==========================================
 app.get("/doctores", async (req, res) => {
     try {
         const pool = await sql.connect(dbConfig);
-
-        const result = await pool.request().query(`
-            SELECT
-                IdDoctor AS idDoctor,
-                Nombres AS nombre,
-                Apellidos AS apellidos,
-                Genero AS genero,
-                Telefono AS telefono,
-                Correo AS correo,
-                Especialidad AS especialidad,
-                CedulaProfesional AS cedulaProfesional,
-                Estatus AS estatus,
-                ModalidadRenta AS modalidadRenta
-            FROM Doctor
-        `);
-
+        const result = await pool.request().query("SELECT IdDoctor, Nombres, Apellidos, Especialidad FROM Doctor WHERE Estatus = 'Activo'");
         res.json(result.recordset);
-
     } catch (err) {
-        console.error("Error en SELECT DOCTORES:", err);
+        console.error("Error al obtener doctores:", err);
+        res.status(500).json({ error: "No pude traer a los doctores de la base de datos" });
+    }
+});
 
-        res.status(500).json({
-            error: "Error al obtener la lista de doctores."
-        });
+// ==========================================
+// RUTA PARA EL LOGIN DEL PACIENTE (NUEVO)
+// ==========================================
+app.post("/login", async (req, res) => {
+    const { correo, password } = req.body;
+
+    if (!correo || !password) {
+        return res.status(400).json({ error: "Por favor, ingresa correo y contraseña." });
+    }
+
+    try {
+        const pool = await sql.connect(dbConfig);
+        
+        // Buscamos al paciente que coincida con ese correo y contraseña
+        const result = await pool.request()
+            .input('correo', sql.VarChar(100), correo)
+            .input('pass', sql.VarChar(255), password)
+            .query(`
+                SELECT IdPaciente, Nombres, Apellidos, Correo 
+                FROM Paciente 
+                WHERE Correo = @correo AND Password = @pass
+            `);
+
+        if (result.recordset.length > 0) {
+            const usuario = result.recordset[0];
+            console.log(`🔑 Login exitoso: ${usuario.Nombres} (ID: ${usuario.IdPaciente})`);
+            
+            res.json({ 
+                mensaje: "Inicio de sesión exitoso", 
+                usuario: {
+                    id: usuario.IdPaciente,
+                    nombres: usuario.Nombres,
+                    apellidos: usuario.Apellidos,
+                    correo: usuario.Correo
+                }
+            });
+        } else {
+            console.log(`❌ Intento de login fallido para: ${correo}`);
+            res.status(401).json({ error: "Correo o contraseña incorrectos." });
+        }
+    } catch (err) {
+        console.error("Error en el login:", err);
+        res.status(500).json({ error: "Error en el servidor al intentar iniciar sesión." });
     }
 });
 
