@@ -38,9 +38,9 @@ import React, { useEffect, useState } from "react";
 
 export default function BuscarMedico() {
   const router = useRouter();
-
   const [medicos, setMedicos] = useState<any[]>([]);
-const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [filtroActivo, setFiltroActivo] = useState("Todos");
 
 useEffect(() => {
   obtenerDoctores();
@@ -81,28 +81,45 @@ const obtenerDoctores = async () => {
           placeholderTextColor="#A0AEC0"
         />
       </View>
-
+      
       {/* Filtros rápidos */}
       <View style={styles.filtersWrapper}>
         <ScrollView
           horizontal
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filtersContainer}
         >
-          <TouchableOpacity style={[styles.filterChip, styles.filterActive]}>
-            <Text style={styles.filterTextActive}>Todos</Text>
-          </TouchableOpacity>
-          {["Especialidades", "Zona Norte", "Zona Sur", "Mejor calificados"].map((filtro) => (
-            <TouchableOpacity key={filtro} style={styles.filterChip}
-            onPress={() => {
-            if (filtro === "Especialidades") {
-              // Navegar a la ruta correspondiente
-              router.push("/interfaces/especialidades"); 
-            }
-          }}
-            >
-              <Text style={styles.filterText}>{filtro}</Text>
-            </TouchableOpacity>
-          ))}
+          {["Todos", "Especialidades", "Zona Norte", "Zona Sur", "Mejor calificados"].map((filtro) => {
+            // Esta es la clave: comparamos el botón actual con el que guardamos en el estado
+            const esActivo = filtroActivo === filtro;
+
+            return (
+              <TouchableOpacity 
+                key={filtro} 
+                // Si es activo, le ponemos la clase 'filterActive' (azul)
+                style={[
+                  styles.filterChip, 
+                  esActivo && styles.filterActive 
+                ]}
+                onPress={() => {
+                  // AL DAR CLICK: El color se mueve a este botón
+                  setFiltroActivo(filtro); 
+                  
+                  // Lógica de navegación si es Especialidades
+                  if (filtro === "Especialidades") {
+                    router.push("/interfaces/especialidades"); 
+                  }
+                }}
+              >
+                <Text style={[
+                  styles.filterText, 
+                  esActivo && styles.filterTextActive // Texto blanco si está seleccionado
+                ]}>
+                  {filtro}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 

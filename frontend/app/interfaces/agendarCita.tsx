@@ -157,36 +157,166 @@ export default function AgendarCita() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F7FAFC" },
-  scrollContent: { padding: 20 },
-  header: { marginBottom: 20 },
-  brand: { fontSize: 18, fontWeight: "bold", color: "#345195" },
-  title: { fontSize: 26, fontWeight: "bold", color: "#1A202C", marginVertical: 5 },
-  subtitle: { fontSize: 13, color: "#718096" },
-  doctorCard: { backgroundColor: "#FFF", padding: 20, borderRadius: 20, borderWidth: 1, borderColor: "#E2E8F0", marginBottom: 20 },
-  doctorName: { fontSize: 18, fontWeight: "bold", color: "#2D3748" },
-  doctorInfo: { fontSize: 12, color: "#A0AEC0", marginVertical: 5 },
-  badge: { backgroundColor: "#E6FFFA", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, alignSelf: "flex-start" },
-  badgeText: { color: "#319795", fontSize: 12, fontWeight: "bold" },
-  sectionCard: { backgroundColor: "#FFF", padding: 15, borderRadius: 20, borderWidth: 1, borderColor: "#E2E8F0", marginBottom: 15 },
-  calendarHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  monthTitle: { fontWeight: "bold", fontSize: 16 },
-  monthNav: { color: "#A0AEC0", fontSize: 12 },
-  weekDays: { flexDirection: "row", justifyContent: "space-around", marginBottom: 10 },
-  weekDayText: { fontSize: 12, color: "#718096", width: 35, textAlign: "center" },
-  daysGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-around" },
-  dayButton: { width: 35, height: 35, justifyContent: "center", alignItems: "center", marginBottom: 5 },
-  daySelected: { backgroundColor: "#345195", borderRadius: 10 },
-  dayText: { fontSize: 14, fontWeight: "600" },
-  dayTextSelected: { color: "#FFF" },
-  sectionTitle: { fontSize: 15, fontWeight: "bold", marginBottom: 15, color: "#2D3748" },
-  timeGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
-  timeButton: { width: "31%", paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0", alignItems: "center", marginBottom: 10 },
-  timeSelected: { backgroundColor: "#345195", borderColor: "#345195" },
-  timeText: { fontWeight: "bold", color: "#2D3748" },
-  timeTextSelected: { color: "#FFF" },
-  resumenMain: { fontSize: 15, fontWeight: "bold", color: "#2D3748" },
-  resumenDetail: { fontSize: 12, color: "#A0AEC0", marginTop: 4 },
-  mainButton: { backgroundColor: "#345195", paddingVertical: 18, borderRadius: 15, alignItems: "center", marginTop: 10 },
-  mainButtonText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#F7FAFC"
+  },
+  scrollContent: { 
+    padding: 20 
+  },
+  header: { 
+    marginBottom: 20 
+  },
+  brand: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#345195" 
+  },
+  title: { 
+    fontSize: 26, 
+    fontWeight: "bold", 
+    color: "#1A202C", 
+    marginVertical: 5 
+  },
+  subtitle: { 
+    fontSize: 13, 
+    color: "#718096" 
+  },
+  doctorCard: { 
+    backgroundColor: "#FFF", 
+    padding: 20, 
+    borderRadius: 20, 
+    borderWidth: 1, 
+    borderColor: "#E2E8F0", 
+    marginBottom: 20 
+  },
+  doctorName: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#2D3748" 
+  },
+  doctorInfo: { 
+    fontSize: 12, 
+    color: "#A0AEC0", 
+    marginVertical: 5 
+  },
+  badge: { 
+    backgroundColor: "#E6FFFA", 
+    paddingHorizontal: 10, 
+    paddingVertical: 4, 
+    borderRadius: 10, 
+    alignSelf: "flex-start" 
+  },
+  badgeText: { 
+    color: "#319795", 
+    fontSize: 12, 
+    fontWeight: "bold" 
+  },
+  sectionCard: { 
+    backgroundColor: "#FFF", 
+    padding: 15, 
+    borderRadius: 20, 
+    borderWidth: 1, 
+    borderColor: "#E2E8F0", 
+    marginBottom: 15 
+  },
+  calendarHeader: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    marginBottom: 10 
+  },
+  monthTitle: { 
+    fontWeight: "bold", 
+    fontSize: 16 
+  },
+  monthNav: { 
+    color: "#A0AEC0", 
+    fontSize: 12 
+  },
+  weekDays: { 
+    flexDirection: "row", 
+    justifyContent: "flex-start", 
+    marginBottom: 10 
+  },
+  weekDayText: { 
+    fontSize: 12, 
+    color: "#718096", 
+    width: "14.28%", 
+    textAlign: "center" 
+  },
+  daysGrid: { 
+    flexDirection: "row", 
+    flexWrap: "wrap", 
+    justifyContent: "space-around" 
+  },
+  dayButton: { 
+    width: 35, 
+    height: 35, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    marginBottom: 5 
+  },
+  daySelected: { 
+    backgroundColor: "#345195", 
+    borderRadius: 10 
+  },
+  dayText: { 
+    fontSize: 14, 
+    fontWeight: "600" 
+  },
+  dayTextSelected: { 
+    color: "#FFF"
+  },
+  sectionTitle: { 
+    fontSize: 15, 
+    fontWeight: "bold", 
+    marginBottom: 15, 
+    color: "#2D3748" 
+  },
+  timeGrid: { 
+    flexDirection: "row", 
+    flexWrap: "wrap", 
+    justifyContent: "space-between" 
+  },
+  timeButton: { 
+    width: "31%", 
+    paddingVertical: 12, 
+    borderRadius: 12, 
+    borderWidth: 1, 
+    borderColor: "#E2E8F0", 
+    alignItems: "center", 
+    marginBottom: 10 
+  },
+  timeSelected: { 
+    backgroundColor: "#345195", 
+    borderColor: "#345195" 
+  },
+  timeText: { 
+    fontWeight: "bold", 
+    color: "#2D3748" 
+  },
+  timeTextSelected: { 
+    color: "#FFF" 
+  },
+  resumenMain: { 
+    fontSize: 15, 
+    fontWeight: "bold", 
+    color: "#2D3748" },
+  resumenDetail: { 
+    fontSize: 12, 
+    color: "#A0AEC0", 
+    marginTop: 4 
+  },
+  mainButton: { 
+    backgroundColor: "#345195", 
+    paddingVertical: 18, 
+    borderRadius: 15, 
+    alignItems: "center", 
+    marginTop: 10 
+  },
+  mainButtonText: { 
+    color: "#FFF", 
+    fontWeight: "bold", 
+    fontSize: 16 
+  },
 });

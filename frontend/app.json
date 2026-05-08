@@ -26,7 +26,8 @@
       "favicon": "./app/img/logo_cuida+.jpg"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

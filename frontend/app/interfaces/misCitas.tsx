@@ -1,3 +1,4 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   SafeAreaView,
@@ -34,6 +35,8 @@ const CITAS = [
 
 export default function misCitas() {
   const [filtro, setFiltro] = useState("Próximas");
+  const router = useRouter();
+  const params = useLocalSearchParams();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -52,37 +55,31 @@ export default function misCitas() {
 
         {/* Filtros */}
         <View style={styles.filtersContainer}>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filtro === "Próximas" && styles.filterActive,
-            ]}
-            onPress={() => setFiltro("Próximas")}
-          >
-            <Text
+          {["Próximas", "Pasadas", "Canceladas"].map((nombreFiltro) => {
+          // Comprobamos si este botón es el que está seleccionado
+          const esActivo = filtro === nombreFiltro;
+
+          return (
+            <TouchableOpacity
+              key={nombreFiltro}
               style={[
-                styles.filterText,
-                filtro === "Próximas" && styles.filterTextActive,
+                styles.filterButton,
+                esActivo && styles.filterActive, // Aplica azul si es activo
               ]}
+              onPress={() => setFiltro(nombreFiltro)} // Cambia el estado al hacer clic
             >
-              Próximas
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setFiltro("Pasadas")}
-          >
-            <Text style={styles.filterText}>Pasadas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setFiltro("Canceladas")}
-          >
-            <Text style={styles.filterText}>Canceladas</Text>
-          </TouchableOpacity>
-        </View>
+              <Text
+                style={[
+                  styles.filterText,
+                  esActivo && styles.filterTextActive, // Texto blanco si es activo
+                ]}
+              >
+                {nombreFiltro}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
         {/* Cards */}
         {CITAS.map((cita) => (
@@ -97,7 +94,20 @@ export default function misCitas() {
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.verButton}>
+            <TouchableOpacity 
+              style={styles.verButton}
+              onPress={() => {
+                router.push({
+                  pathname: "/interfaces/detalleCita", 
+                  params: { 
+                    doctor: cita.doctor, 
+                    especialidad: cita.especialidad,
+                    fecha: cita.fecha,
+                    estado: cita.estado
+                  }
+                });
+              }}
+            >
               <Text style={styles.verButtonText}>Ver</Text>
             </TouchableOpacity>
           </View>

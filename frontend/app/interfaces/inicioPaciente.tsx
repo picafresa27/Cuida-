@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
 import {
@@ -19,6 +19,8 @@ const socket = io(URL_BACKEND);
 export default function HomePaciente() {
   const { nombre } = useLocalSearchParams();
   const router = useRouter();
+
+  const [especialidadActiva, setEspecialidadActiva] = useState("Medicina general");
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -80,7 +82,22 @@ export default function HomePaciente() {
         </View>
 
         {/* Cita proxima */}
-        <View style={styles.appointmentCard}>
+        <TouchableOpacity 
+          style={styles.appointmentCard}
+          activeOpacity={0.7}
+          onPress={() => {
+            router.push({
+              pathname: "/interfaces/detalleCita",
+              params: {
+                doctor: "Dra. Ana Beltrán",
+                especialidad: "Cardiología",
+                fecha: "Miércoles 18 de marzo · 10:30 AM",
+                sucursal: "Zona Norte · Consultorio 4",
+                estado: "Confirmada"
+              }
+            });
+          }}
+        >
           <Text style={styles.sectionLabel}>Próxima cita</Text>
           <Text style={styles.doctorName}>Cardiología - Dra. Ana Beltrán</Text>
           <Text style={styles.appointmentDetail}>
@@ -93,7 +110,7 @@ export default function HomePaciente() {
           <View style={styles.statusBadge}>
             <Text style={styles.statusText}>Confirmada</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Botón nueva cita */}
         <TouchableOpacity 
@@ -104,6 +121,7 @@ export default function HomePaciente() {
         </TouchableOpacity>
 
         {/* Especialidades Destacadas (RECUPERADO) */}
+        {/* Especialidades Destacadas (CON EFECTO DE FOCO) */}
         <View style={styles.specialtiesSection}>
           <Text style={styles.sectionLabelBold}>Especialidades destacadas</Text>
           <View style={styles.tagsContainer}>
@@ -114,11 +132,28 @@ export default function HomePaciente() {
               "Cardiología",
               "Ginecología",
               "Traumatología",
-            ].map((item) => (
-              <View key={item} style={styles.tag}>
-                <Text style={styles.tagText}>{item}</Text>
-              </View>
-            ))}
+            ].map((item) => {
+              // Verificamos si esta es la etiqueta activa
+              const esActiva = especialidadActiva === item;
+
+              return (
+                <TouchableOpacity 
+                  key={item} 
+                  onPress={() => setEspecialidadActiva(item)} // Cambia el foco al tocar
+                  style={[
+                    styles.tag, 
+                    esActiva && styles.tagActiva // Si es activa, aplica estilo extra
+                  ]}
+                >
+                  <Text style={[
+                    styles.tagText, 
+                    esActiva && styles.tagTextActiva // Si es activa, cambia el color de letra
+                  ]}>
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       </ScrollView>
@@ -261,14 +296,23 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tag: {
-    backgroundColor: "#E6FFFA",
+    backgroundColor: "#E6FFFA", // Color gris clarito por defecto
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ffffff",
+  },
+  tagActiva: {
+    backgroundColor: "#345195", // El azul de Cuida+ cuando está seleccionada
+    borderColor: "#345195",
   },
   tagText: {
     color: "#319795",
     fontSize: 12,
     fontWeight: "600",
+  },
+  tagTextActiva: {
+    color: "#FFFFFF", // Blanco cuando está seleccionada
   },
 });
