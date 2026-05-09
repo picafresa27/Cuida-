@@ -30,7 +30,7 @@ export default function LoginScreen() {
     try {
       // Hacemos petición POST a la nueva ruta /login
       const res = await fetch(
-        "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/login",
+        "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/login",
         {
           method: "POST",
           headers: {
@@ -50,7 +50,7 @@ export default function LoginScreen() {
         
         // SI EXISTE → entra y manda el nombre a la siguiente pantalla
         router.replace({
-          pathname: "/interfaces/inicioPaciente",
+          pathname: "/(tabs)",
           params: { nombre: data.usuario.nombres }, 
         });
       } else {
@@ -122,7 +122,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
 
               {/*@ts-ignore*/}
-              <Link href="/interfaces/registro" asChild>
+              <Link href="/registro" asChild>
                 <TouchableOpacity style={styles.botonSecundario}>
                   <Text style={styles.textoAzul}>Crear cuenta</Text>
                 </TouchableOpacity>

@@ -52,7 +52,7 @@ app.get("/", (req, res) => {
 });
 
 //Crear un nuevo Paciente
-app.post("/usuarios", async (req, res) => {
+app.post("/registro", async (req, res) => {
     const { nombre, apellidos, fechaNacimiento, genero, telefono, correo, password } = req.body;
 
     if (!nombre || !apellidos || !fechaNacimiento || !correo || !password) {

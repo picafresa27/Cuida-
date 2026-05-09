@@ -75,7 +75,7 @@ export default function Especialidades() {
 
       {/* Barra de navegación inferior */}
       <View style={styles.tabBar}>
-        <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/interfaces/inicioPaciente")}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/(tabs)")}>
           <View style={[styles.dot, styles.dotActive]} />
           <Text style={[styles.tabLabel, styles.labelActive]}>Inicio</Text>
         </TouchableOpacity>

@@ -73,7 +73,7 @@ export default function DetalleCita() {
           style={styles.buttonSecondary}
           onPress={() => {
             router.push({
-              pathname: "/interfaces/reagendarCita", 
+              pathname: "/(tabs)/reagendarCita", 
               params: { 
                 doctor: doctor || "Dra. Ana Beltrán", 
                 especialidad: especialidad || "Cardiología",

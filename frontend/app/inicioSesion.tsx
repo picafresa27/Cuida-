@@ -74,7 +74,7 @@ export default function LoginScreen() {
 
   try {
     const res = await fetch(
-  "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/inicioSesion",
+  "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/login",
   {
     method: "POST",
     headers: {
@@ -98,7 +98,7 @@ export default function LoginScreen() {
     Alert.alert("Éxito", "Inicio de sesión exitoso");
 
     router.replace({
-      pathname: "/interfaces/inicioPaciente",
+      pathname: "/(tabs)",
       params: {
         nombre: data.usuario.nombres,
       },
@@ -124,7 +124,7 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Logo */}
           <Image
-            source={require("../img/logo_cuida+.jpg")}
+            source={require("./img/logo_cuida+.jpg")}
             style={styles.logo}
             resizeMode="contain"
           />

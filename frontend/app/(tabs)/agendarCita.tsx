@@ -20,7 +20,7 @@ export default function AgendarCita() {
 
   // --- LÓGICA PARA AGENDAR ---
   const handleAgendar = async () => {
-    router.push("/interfaces/metodoPago");
+    router.push("/(tabs)/metodoPago");
     try {
       // Formateamos los datos para que SQL los entienda
       // La fecha debe ser YYYY-MM-DD

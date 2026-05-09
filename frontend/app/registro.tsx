@@ -100,7 +100,7 @@ export default function Registro() {
        * IMPORTANTE: 
        * Reemplaza '192.168.X.X' con la IP que obtuviste en el comando 'ipconfig'.
        */
-      const URL_BACKEND = "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/registro";
+      const URL_BACKEND = "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/registro".trim();
       
       const res = await fetch(URL_BACKEND, {
         method: "POST",
@@ -124,7 +124,7 @@ export default function Registro() {
       if (res.ok) {
         Alert.alert("Éxito", "¡Paciente registrado en CuidaPlus!");
         router.replace({
-          pathname: "/interfaces/inicioPaciente",
+          pathname: "/(tabs)",
           params: { nombre: nombre },
         });
 

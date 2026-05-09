@@ -98,7 +98,7 @@ export default function misCitas() {
               style={styles.verButton}
               onPress={() => {
                 router.push({
-                  pathname: "/interfaces/detalleCita", 
+                  pathname: "/(tabs)/detalleCita", 
                   params: { 
                     doctor: cita.doctor, 
                     especialidad: cita.especialidad,
