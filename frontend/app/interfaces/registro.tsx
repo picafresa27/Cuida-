@@ -100,7 +100,7 @@ export default function Registro() {
        * IMPORTANTE: 
        * Reemplaza '192.168.X.X' con la IP que obtuviste en el comando 'ipconfig'.
        */
-      const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/usuarios";
+      const URL_BACKEND = "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/";
       
       const res = await fetch(URL_BACKEND, {
         method: "POST",

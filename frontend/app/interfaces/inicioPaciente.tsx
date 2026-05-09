@@ -13,7 +13,7 @@ import {
 } from "react-native";
 
 // 1. CONFIGURACIÓN DEL SOCKET
-const URL_BACKEND = "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/usuarios";
+const URL_BACKEND = "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/";
 const socket = io(URL_BACKEND);
 
 export default function HomePaciente() {

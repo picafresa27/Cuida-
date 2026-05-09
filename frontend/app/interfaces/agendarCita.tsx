@@ -28,7 +28,7 @@ export default function AgendarCita() {
       // La hora debe ser HH:MM:SS
       const horaFormateada = `${selectedTime}:00`;
 
-      const response = await fetch("https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/agendar-cita", {
+      const response = await fetch("https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
