@@ -1,4 +1,4 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -40,7 +40,7 @@ export default function Registro() {
     setTelefono(formateado);
   };
 
-  const onChange = (event, selectedDate) => {
+  const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowPicker(false); 
     if (selectedDate) {
       setDate(selectedDate);
@@ -100,7 +100,7 @@ export default function Registro() {
        * IMPORTANTE: 
        * Reemplaza '192.168.X.X' con la IP que obtuviste en el comando 'ipconfig'.
        */
-      const URL_BACKEND = "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/";
+      const URL_BACKEND = "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/registro";
       
       const res = await fetch(URL_BACKEND, {
         method: "POST",

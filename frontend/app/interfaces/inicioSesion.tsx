@@ -74,7 +74,7 @@ export default function LoginScreen() {
 
   try {
     const res = await fetch(
-  "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/",
+  "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/inicioSesion",
   {
     method: "POST",
     headers: {

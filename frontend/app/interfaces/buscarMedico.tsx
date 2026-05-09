@@ -49,7 +49,7 @@ useEffect(() => {
 const obtenerDoctores = async () => {
   try {
     const response = await fetch(
-      "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/"
+      "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/buscarMedico"
     );
 
     const data = await response.json();
