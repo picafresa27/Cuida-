@@ -233,6 +233,30 @@ app.post("/actualizarFotoPerfil", async (req, res) => {
   }
 });
 
+// Ruta para registrar un nuevo pago (Anticipo o Liquidación)
+app.post("/pagos", async (req, res) => {
+  const { monto, metodoPago, estatus, tipoPago, idCita } = req.body;
+
+  try {
+    const pool = await sql.connect(dbConfig);
+    await pool.request()
+      .input("monto", sql.Money, monto)
+      .input("metodoPago", sql.VarChar, metodoPago)
+      .input("estatus", sql.VarChar, estatus)
+      .input("tipoPago", sql.VarChar, tipoPago)
+      .input("idCita", sql.Int, idCita)
+      .query(`
+        INSERT INTO Pagos (Fecha, Monto, MetodoPago, Estatus, TipoPago, IdCita)
+        VALUES (GETDATE(), @monto, @metodoPago, @estatus, @tipoPago, @idCita)
+      `);
+
+    res.status(201).json({ message: "Pago registrado correctamente" });
+  } catch (err) {
+    console.error("Error al registrar pago:", err);
+    res.status(500).json({ error: "No se pudo registrar el pago en la base de datos" });
+  }
+});
+
 // 3. LÓGICA DE EVENTOS DE SOCKET.IO
 io.on("connection", (socket) => {
     console.log("⚡ Un celular se acaba de conectar a Cuida+ con ID:", socket.id);
