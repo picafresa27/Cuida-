@@ -1,6 +1,5 @@
 import { Link, useRouter } from "expo-router";
-import { useState, useContext } from "react";
-import { UserContext } from "./context/userContext";
+import { useContext, useState } from "react";
 import {
   Alert,
   Image,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { UserContext } from "../context/userContext";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
   try {
     const res = await fetch(
-  "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/login",
+  "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/login",
   {
     method: "POST",
     headers: {

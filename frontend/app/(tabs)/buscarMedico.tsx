@@ -59,7 +59,7 @@ export default function BuscarMedico() {
   const obtenerDoctores = async () => {
     try {
       const response = await fetch(
-        "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/doctores"
+        "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/doctores"
       );
 
       const data = await response.json();

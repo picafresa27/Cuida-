@@ -1,16 +1,15 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useContext, useEffect, useState } from "react";
-import { Pressable, View } from 'react-native';
-import { io } from "socket.io-client";
 import { Ionicons } from '@expo/vector-icons';
-import { UserContext } from "../context/userContext";
+import { useRouter } from "expo-router";
+import React, { useContext, useEffect, useState } from "react";
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+    Pressable, SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity, View
+} from 'react-native';
+import { io } from "socket.io-client";
+import { UserContext } from "../../context/userContext";
 
 // 1. CONFIGURACIÓN DEL SOCKET
 const URL_BACKEND = "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/inicioPaciente";

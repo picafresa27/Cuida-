@@ -1,9 +1,9 @@
-import React, {useState, useContext} from 'react';
-import * as ImagePicker from 'expo-image-picker';
-import { StyleSheet, View, Text, SafeAreaView, Image, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { UserContext } from "../context/userContext";
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import React, { useContext, useState } from 'react';
+import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { UserContext } from "../../context/userContext";
 
 export default function PerfilScreen() {
   const { usuario, setUsuario } = useContext(UserContext);

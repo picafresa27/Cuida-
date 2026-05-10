@@ -100,7 +100,7 @@ export default function Registro() {
        * IMPORTANTE: 
        * Reemplaza '192.168.X.X' con la IP que obtuviste en el comando 'ipconfig'.
        */
-      const URL_BACKEND = "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/registro".trim();
+      const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/registro".trim();
       
       const res = await fetch(URL_BACKEND, {
         method: "POST",
