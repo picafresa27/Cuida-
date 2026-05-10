@@ -1,9 +1,9 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Pressable, View } from 'react-native';
 import { io } from "socket.io-client";
 import { Ionicons } from '@expo/vector-icons';
-
+import { UserContext } from "../context/userContext";
 import {
   SafeAreaView,
   ScrollView,
@@ -13,11 +13,11 @@ import {
 } from "react-native";
 
 // 1. CONFIGURACIÓN DEL SOCKET
-const URL_BACKEND = "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/inicioPaciente";
+const URL_BACKEND = "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/inicioPaciente";
 const socket = io(URL_BACKEND);
 
 export default function HomePaciente() {
-  const { nombre } = useLocalSearchParams();
+  const { usuario } = useContext(UserContext);
   const router = useRouter();
 
   const [especialidadActiva, setEspecialidadActiva] = useState("Medicina general");
@@ -41,7 +41,7 @@ export default function HomePaciente() {
         {/* Titulos */}
         <View style={styles.header}>
           <Text style={styles.brand}>Cuida+</Text>
-          <Text style={styles.welcome}>Hola, {nombre || "Usuario"}</Text>
+          <Text style={styles.welcome}>Hola, {usuario?.nombres || "Usuario"}</Text>
           <Text style={styles.subtitle}>
             Encuentra especialidades, agenda tu próxima cita y revisa tus
             consultas activas.

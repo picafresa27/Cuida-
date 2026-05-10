@@ -30,7 +30,7 @@ export default function LoginScreen() {
     try {
       // Hacemos petición POST a la nueva ruta /login
       const res = await fetch(
-        "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/login",
+        "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/login",
         {
           method: "POST",
           headers: {

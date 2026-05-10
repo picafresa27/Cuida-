@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 //import React from "react";
+import { Ionicons } from '@expo/vector-icons';
 import {
   SafeAreaView,
   ScrollView,
@@ -39,6 +40,7 @@ import React, { useEffect, useState } from "react";
 export default function BuscarMedico() {
   // 1. Estado para el texto de búsqueda
   const [busqueda, setBusqueda] = useState("");
+  const [especialidadSeleccionada, setEspecialidadSeleccionada] = useState("");
   // 2. Estado para saber qué filtro de arriba está seleccionado
   const [filtroSeleccionado, setFiltroSeleccionado] = useState("Especialidades");
   // 3. Estado para controlar si mostramos la cuadrícula o la lista de doctores
@@ -57,7 +59,7 @@ export default function BuscarMedico() {
   const obtenerDoctores = async () => {
     try {
       const response = await fetch(
-        "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/buscarMedico"
+        "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/doctores"
       );
 
       const data = await response.json();
@@ -71,7 +73,7 @@ export default function BuscarMedico() {
     }
   };
 
-  const manejarCambioFiltro = (filtro: string) => {
+  /*const manejarCambioFiltro = (filtro: string) => {
     setFiltroActivo(filtro); // Cambia el brillo del botón seleccionado
 
     if (filtro === "Especialidades") {
@@ -85,15 +87,33 @@ export default function BuscarMedico() {
       // Por ejemplo: obtenerDoctores(filtro); 
       obtenerDoctores();
     }
-  };
+  };*/
 
-  const doctoresFiltrados = medicos.filter((medico) => {
+  /*const doctoresFiltrados = medicos.filter((medico) => {
     const termino = busqueda.toLowerCase();
     return (
       medico.Nombres.toLowerCase().includes(termino) ||
       medico.Apellidos.toLowerCase().includes(termino) ||
       medico.Especialidad.toLowerCase().includes(termino)
     );
+  });*/
+
+  const doctoresFiltrados = medicos.filter((medico) => {
+
+    const termino = busqueda.toLowerCase();
+
+    // Buscar por texto
+    const coincideBusqueda =
+      medico.Nombres.toLowerCase().includes(termino) ||
+      medico.Apellidos.toLowerCase().includes(termino) ||
+      medico.Especialidad.toLowerCase().includes(termino);
+
+    // Filtrar por especialidad seleccionada
+    const coincideEspecialidad =
+      especialidadSeleccionada === "" ||
+      medico.Especialidad === especialidadSeleccionada;
+
+    return coincideBusqueda && coincideEspecialidad;
   });
 
   return (
@@ -117,10 +137,42 @@ export default function BuscarMedico() {
             setBusqueda(texto);
             if (texto.length > 0) {
               setMostrarResultados(true);
+            }else{
+              setMostrarResultados(false);
             }
           }}
         />
       </View>
+
+      {/* CHIP DE ESPECIALIDAD */}
+      {especialidadSeleccionada !== "" && (
+
+        <View style={styles.chipContainer}>
+
+          <View style={styles.chip}>
+
+            <Text style={styles.chipText}>
+              {especialidadSeleccionada}
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => {
+
+                setEspecialidadSeleccionada("");
+
+              // Si tampoco hay búsqueda, volver a especialidades
+              if (busqueda.trim() === "") {
+                  setMostrarResultados(false);
+                }
+              }}
+            >
+              <Ionicons name="close" size={18} color="white" />
+            </TouchableOpacity>
+
+          </View>
+
+        </View>
+      )}
 
       {/* Contenido Dinámico */}
       <ScrollView contentContainerStyle={styles.listContainer}>
@@ -131,8 +183,9 @@ export default function BuscarMedico() {
                 key={esp}
                 style={styles.cardEspecialidad}
                 onPress={() => {
-                  setBusqueda(esp);
-                  setFiltroActivo("Todos");
+                  /*setBusqueda(esp);
+                  setFiltroActivo("Todos");*/
+                  setEspecialidadSeleccionada(esp);
                   setMostrarResultados(true);
                 }}
               >
@@ -336,5 +389,25 @@ const styles = StyleSheet.create({
     color: "#41A69A",
     fontWeight: "600",
     marginTop: 10,
+  },
+  chipContainer: {
+  paddingHorizontal: 25,
+  marginBottom: 10,
+  },
+
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#345195",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+
+  chipText: {
+    color: "white",
+    fontWeight: "600",
+    marginRight: 8,
   },
 });

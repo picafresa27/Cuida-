@@ -121,7 +121,9 @@ app.get("/usuarios", async (req, res) => {
         SELECT 
             IdPaciente, 
             Nombres AS nombre, 
-            Correo AS correo, 
+            Apellidos AS apellido,
+            Correo AS correo,
+            FotoPerfil AS fotoPerfil, 
             Password AS password 
         FROM Paciente
     `);
@@ -164,7 +166,7 @@ app.post("/login", async (req, res) => {
             .input('correo', sql.VarChar(100), correo)
             .input('pass', sql.VarChar(255), password)
             .query(`
-                SELECT IdPaciente, Nombres, Apellidos, Correo 
+                SELECT IdPaciente, Nombres, Apellidos, Correo, FotoPerfil 
                 FROM Paciente 
                 WHERE Correo = @correo AND Password = @pass
             `);
@@ -179,7 +181,8 @@ app.post("/login", async (req, res) => {
                     id: usuario.IdPaciente,
                     nombres: usuario.Nombres,
                     apellidos: usuario.Apellidos,
-                    correo: usuario.Correo
+                    correo: usuario.Correo,
+                    fotoPerfil: usuario.FotoPerfil
                 }
             });
         } else {
@@ -190,6 +193,44 @@ app.post("/login", async (req, res) => {
         console.error("Error en el login:", err);
         res.status(500).json({ error: "Error en el servidor al intentar iniciar sesión." });
     }
+});
+// ==========================================
+// RUTA PARA LA FOTO DE PERFIL DEL PACIENTE (NUEVO)
+// ==========================================
+app.post("/actualizarFotoPerfil", async (req, res) => {
+    console.log(req.body);
+  const { idPaciente, fotoPerfil } = req.body;
+
+  try {
+
+    console.log("Actualizando foto...");
+
+    const pool = await sql.connect(dbConfig);
+
+    await pool.request()
+      .input("idPaciente", sql.Int, idPaciente)
+      .input("fotoPerfil", sql.VarChar, fotoPerfil)
+      .query(`
+        UPDATE Paciente
+        SET FotoPerfil = @fotoPerfil
+        WHERE IdPaciente = @idPaciente
+      `);
+
+      console.log("Foto actualizada");
+
+    res.json({
+      ok: true,
+      mensaje: "Foto actualizada"
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      error: "Error actualizando foto"
+    });
+  }
 });
 
 // 3. LÓGICA DE EVENTOS DE SOCKET.IO

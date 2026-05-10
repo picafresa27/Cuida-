@@ -1,5 +1,6 @@
 import { Link, useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { UserContext } from "./context/userContext";
 import {
   Alert,
   Image,
@@ -16,55 +17,11 @@ import {
 
 export default function LoginScreen() {
   const router = useRouter();
-
+  const { setUsuario } = useContext(UserContext);
+  
   // Estados para guardar lo que el usuario escribe
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  /*const handleLogin = async () => {
-    // Navega a la interfaz de inicio de paciente
-    // Asegúrate de que el archivo se llame homePaciente.tsx o ajusta el nombre aquí
-    if (!email || !password) {
-      Alert.alert("Error", "Completa todos los campos");
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/login"
-      );
-      
-      const usuarios = await res.json();
-
-     // Buscar usuario a prueba de balas
-      const usuario = usuarios.find((u: any) => {
-        if (!u.correo || !u.password) return false;
-
-        // .trim() elimina espacios accidentales al inicio y al final
-        return (
-          u.correo.trim().toLowerCase() === email.trim().toLowerCase() &&
-          u.password.trim() === password.trim()
-        );
-      });
-
-      console.log("1. Yo escribí -> Correo:", email, "| Pass:", password);
-      console.log("2. SQL me mandó (Primer usuario) ->", usuarios[0]);
-
-      if (!usuario) {
-        Alert.alert("Error", "Usuario o contraseña incorrectos");
-        return;
-      }
-
-      // SI EXISTE → entra y manda el nombre
-      router.replace({
-        pathname: "/interfaces/inicioPaciente",
-        params: { nombre: usuario.nombre },
-      });
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Error", "No se pudo conectar al servidor");
-    }
-  };*/
 
   const handleLogin = async () => {
   if (!email || !password) {
@@ -74,7 +31,7 @@ export default function LoginScreen() {
 
   try {
     const res = await fetch(
-  "https://reimagined-disco-g4rvwgw9jprrfqvx-3000.app.github.dev/login",
+  "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/login",
   {
     method: "POST",
     headers: {
@@ -97,12 +54,18 @@ export default function LoginScreen() {
 
     Alert.alert("Éxito", "Inicio de sesión exitoso");
 
-    router.replace({
+    /*router.replace({
       pathname: "/(tabs)",
       params: {
         nombre: data.usuario.nombres,
       },
-    });
+    });*/
+
+    // Guardar usuario globalmente
+    setUsuario(data.usuario);
+
+    // Navegar
+    router.replace("/(tabs)");
 
   } catch (error) {
     console.log("Error login:", error);
@@ -176,7 +139,7 @@ export default function LoginScreen() {
 
               {/* Enlace a la otra pantalla si ya tienes el archivo registro.tsx */}
               {/*@ts-ignore*/}
-              <Link href="/interfaces/registro" asChild>
+              <Link href="/registro" asChild>
                 <TouchableOpacity style={styles.botonSecundario}>
                   <Text style={styles.textoAzul}>Crear cuenta</Text>
                 </TouchableOpacity>

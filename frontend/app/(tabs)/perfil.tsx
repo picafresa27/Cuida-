@@ -1,8 +1,137 @@
-import React from 'react';
+import React, {useState, useContext} from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import { StyleSheet, View, Text, SafeAreaView, Image, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { UserContext } from "../context/userContext";
+import { useRouter } from 'expo-router';
 
 export default function PerfilScreen() {
+  const { usuario, setUsuario } = useContext(UserContext);
+  const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
+  const router = useRouter();
+
+  const seleccionarImagen = async () => {
+  //console.log("1. Entró a seleccionarImagen");
+  const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permiso.granted) {
+    alert("Permiso denegado");
+    return;
+  }
+
+  const resultado = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 1,
+  });
+
+  //console.log("2. Resultado:", resultado);
+
+  if (resultado.canceled) return;
+
+  const imagen = resultado.assets[0];
+
+  //console.log("3. Imagen:", imagen);
+
+  const formData = new FormData();
+
+  formData.append('file', {
+    uri: imagen.uri,
+    type: 'image/jpeg',
+    name: 'perfil.jpg',
+  } as any);
+
+  formData.append('upload_preset', 'cuida+');
+
+  try {
+
+    //console.log("4. Subiendo a Cloudinary");
+
+    const resCloudinary = await fetch(
+      'https://api.cloudinary.com/v1_1/dji2j4zdz/image/upload',
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    //console.log("5. Status Cloudinary:", resCloudinary.status);
+
+    const data = await resCloudinary.json();
+
+    console.log("URL CLOUDINARY:", data.secure_url);
+    //console.log("6. Data Cloudinary:", data);
+
+    if (!data.secure_url) {
+      alert("Cloudinary no devolvió URL");
+      return;
+    }
+
+    //console.log("7. URL:", data.secure_url);
+
+    /*await fetch(
+      "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/actualizarFotoPerfil",
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idPaciente: usuario?.id,
+          fotoPerfil: data.secure_url,
+        }),
+      }
+    );*/
+
+    const resBackend = await fetch(
+  'https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/actualizarFotoPerfil',
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      idPaciente: usuario?.id,
+      fotoPerfil: data.secure_url,
+    }),
+  }
+);
+
+console.log("STATUS BACKEND:", resBackend.status);
+
+const backendData = await resBackend.json();
+
+console.log("RESPUESTA BACKEND:", backendData);
+    
+    //console.log("8. Guardado en SQL");
+
+    setUsuario({
+      ...usuario!,
+      fotoPerfil: data.secure_url,
+    });
+
+    //console.log("9. Context actualizado");
+
+    alert("Foto actualizada");
+
+  } catch (error) {
+
+    console.log("ERROR:", error);
+
+    alert("Error subiendo imagen");
+  }
+};
+
+const cerrarSesion = () => {
+
+  // Limpiar usuario
+  setUsuario(null);
+
+  // Ir al login
+  router.replace("/inicioSesion");
+};
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -12,14 +141,14 @@ export default function PerfilScreen() {
           <Text style={styles.title}>Mi Perfil</Text>
           <View style={styles.avatarContainer}>
             <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={50} color="#345195" />
+              {usuario?.fotoPerfil ? (<Image source={{ uri: usuario.fotoPerfil }} style={styles.avatarImage}/>) : (<Ionicons name="person" size={50} color="#345195" />)}
             </View>
-            <Pressable style={styles.editBadge}>
+            <Pressable style={styles.editBadge}onPress={seleccionarImagen}>
               <Ionicons name="camera" size={18} color="white" />
             </Pressable>
           </View>
-          <Text style={styles.userName}>Ale Lomeli</Text>
-          <Text style={styles.userEmail}>ale.lomeli@ejemplo.com</Text>
+          <Text style={styles.userName}>{usuario?.nombres} {usuario?.apellidos} </Text>
+          <Text style={styles.userEmail}>{usuario?.correo}</Text>
         </View>
 
         {/* Opciones de Configuración */}
@@ -30,7 +159,7 @@ export default function PerfilScreen() {
           <MenuOption icon="shield-checkmark-outline" label="Seguridad" />
           <MenuOption icon="help-circle-outline" label="Ayuda y Soporte" />
           
-          <Pressable style={styles.logoutButton}>
+          <Pressable style={styles.logoutButton} onPress={cerrarSesion}>
             <Ionicons name="log-out-outline" size={22} color="#FF4B4B" />
             <Text style={styles.logoutText}>Cerrar Sesión</Text>
           </Pressable>
@@ -157,5 +286,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat',
     fontWeight: '600',
     color: '#FF4B4B',
+  },
+  avatarImage: {
+  width: '100%',
+  height: '100%',
+  borderRadius: 50,
   },
 });
