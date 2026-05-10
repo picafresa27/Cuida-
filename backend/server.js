@@ -233,6 +233,72 @@ app.post("/actualizarFotoPerfil", async (req, res) => {
   }
 });
 
+// RUTA PARA AGENDAR UNA CITA 
+app.post("/agendarCita", async (req, res) => {
+    const { fecha, hora, idPaciente, idDoctor, numeroConsultorio, anticipo } = req.body;
+
+    try {
+        const pool = await sql.connect(dbConfig);
+        
+        const result = await pool.request()
+            .input("fecha", sql.VarChar, fecha) 
+            .input("hora", sql.VarChar, hora)   
+            .input("idPaciente", sql.Int, idPaciente)
+            .input("idDoctor", sql.Int, idDoctor)
+            .input("numConsultorio", sql.VarChar(10), numeroConsultorio)
+            .input("anticipo", sql.Bit, anticipo ? 1 : 0)
+            .input("estado", sql.VarChar(20), 'Pendiente') // 👈 Agregamos el estado inicial
+            .query(`
+                INSERT INTO CitaMedica (Fecha, Hora, IdPaciente, IdDoctor, NumeroConsultorio, Anticipo, Estado)
+                OUTPUT INSERTED.IdCita
+                VALUES (@fecha, @hora, @idPaciente, @idDoctor, @numConsultorio, @anticipo, @estado)
+            `);
+
+        const nuevoIdCita = result.recordset[0].IdCita;
+        console.log(`✅ Cita agendada con éxito. ID: ${nuevoIdCita}`);
+
+        res.status(201).json({ 
+            mensaje: "Cita creada correctamente", 
+            idCita: nuevoIdCita 
+        });
+
+    } catch (err) {
+        // Esto te ayudará a ver cualquier otro error de columna en la terminal
+        console.error("❌ Error en SQL:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Obtener las citas de un paciente específico
+// Obtener las citas de un paciente específico (CORREGIDA PARA FORMATO DE FECHA)
+app.get("/mis-citas/:idPaciente", async (req, res) => {
+    const { idPaciente } = req.params;
+
+    try {
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request()
+            .input("idPaciente", sql.Int, idPaciente)
+            .query(`
+                SELECT 
+                    C.IdCita, 
+                    CONVERT(VARCHAR, C.Fecha, 126) AS fechaRaw, 
+                    CONVERT(VARCHAR, C.Hora, 108) AS horaRaw, 
+                    C.Estado, 
+                    D.Nombres AS nombreDoctor, 
+                    D.Apellidos AS apellidosDoctor, 
+                    D.Especialidad
+                FROM CitaMedica C
+                INNER JOIN Doctor D ON C.IdDoctor = D.IdDoctor
+                WHERE C.IdPaciente = @idPaciente
+            `)
+
+        res.json(result.recordset);
+    } catch (err) {
+        console.error("Error al obtener citas:", err);
+        res.status(500).json({ error: "Error al obtener las citas del servidor" });
+    }
+});
+
 // Ruta para registrar un nuevo pago (Anticipo o Liquidación)
 app.post("/pagos", async (req, res) => {
   const { monto, metodoPago, estatus, tipoPago, idCita } = req.body;

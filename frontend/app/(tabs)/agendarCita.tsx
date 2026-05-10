@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   SafeAreaView,
@@ -25,29 +25,33 @@ export default function AgendarCita() {
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
   ];
 
-  // Días que tiene el mes actual (Ej: Mayo tiene 31)
   const diasEnElMes = new Date(anioActual, mesActualIndex + 1, 0).getDate();
 
   // --- ESTADOS ---
-  const [selectedDay, setSelectedDay] = useState(diaActual); // Empezamos en hoy
+  const [selectedDay, setSelectedDay] = useState(diaActual);
   const [selectedTime, setSelectedTime] = useState("");
 
   const horarios = ["09:00", "10:30", "12:00", "16:00", "17:30", "19:00"];
 
-  // --- LÓGICA DE BLOQUEO (INFALIBLE) ---
+  // --- LÓGICA DE BLOQUEO BLINDADA ---
   const verificarSiYaPaso = (timeStr: string) => {
-    const [horaSlot, minSlot] = timeStr.split(":").map(Number);
+    const [h, m] = timeStr.split(':').map(Number);
+    // Creamos la fecha completa del slot que estamos dibujando
+    const fechaSlot = new Date(anioActual, mesActualIndex, selectedDay, h, m);
     
-    // Creamos una fecha para el horario que estamos revisando
-    const fechaDelSlot = new Date(anioActual, mesActualIndex, selectedDay, horaSlot, minSlot);
-    
-    // Si la fecha de ese horario es MENOR a la fecha de este preciso instante, ya pasó.
-    return fechaDelSlot < new Date();
+    // Si la fecha del slot es menor a la fecha de este preciso segundo, está bloqueada
+    return fechaSlot < ahora;
   };
+
+  // Selecciona automáticamente la primera hora disponible al cambiar de día
+  useEffect(() => {
+    const primeraDisponible = horarios.find(h => !verificarSiYaPaso(h));
+    setSelectedTime(primeraDisponible || "");
+  }, [selectedDay]);
 
   const handleAgendar = async () => {
     if (!selectedTime) {
-      Alert.alert("Horario requerido", "Por favor, selecciona una hora para tu cita.");
+      Alert.alert("Atención", "Selecciona un horario disponible.");
       return;
     }
 
@@ -56,8 +60,7 @@ export default function AgendarCita() {
       const diaF = selectedDay.toString().padStart(2, '0');
       const fechaDB = `${anioActual}-${mesF}-${diaF}`;
 
-      // 1. Intentamos crear la cita en el servidor
-      const response = await fetch("https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/agendarCita", {
+      const response = await fetch("https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/agendarCita", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -72,7 +75,6 @@ export default function AgendarCita() {
 
       if (response.ok) {
         const data = await response.json();
-        // 2. Si se creó, vamos a pagar (Pasando los parámetros reales)
         router.push({
           pathname: "/metodoPago",
           params: { 
@@ -82,10 +84,10 @@ export default function AgendarCita() {
           }
         });
       } else {
-        Alert.alert("Error", "Este horario ya no está disponible.");
+        Alert.alert("Error", "Este horario ya fue ocupado.");
       }
     } catch (error) {
-      Alert.alert("Error de conexión", "Asegúrate de que el backend esté corriendo.");
+      Alert.alert("Error", "No se pudo conectar con el servidor.");
     }
   };
 
@@ -93,23 +95,23 @@ export default function AgendarCita() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
-        {/* CABECERA */}
+        {/* CABECERA (Cuida+) */}
         <View style={styles.header}>
           <Text style={styles.brand}>Cuida+</Text>
           <Text style={styles.title}>Agendar cita</Text>
           <Text style={styles.subtitle}>
-            Selecciona la fecha y el horario de tu preferencia.
+            Elige la fecha en el calendario y selecciona un horario disponible.
           </Text>
         </View>
 
-        {/* INFO DOCTOR (Recuperada) */}
+        {/* INFO DOCTOR (Especialidad, Zona Norte, Consultorio 4) */}
         <View style={styles.doctorCard}>
           <Text style={styles.doctorName}>Dr. {nombre} {apellidos}</Text>
           <Text style={styles.doctorInfo}>
             {especialidad} · Zona Norte · Consultorio 4
           </Text>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>Anticipo 50% requerido</Text>
+            <Text style={styles.badgeText}>Anticipo 50%</Text>
           </View>
         </View>
 
@@ -117,15 +119,7 @@ export default function AgendarCita() {
         <View style={styles.sectionCard}>
           <View style={styles.calendarHeader}>
             <Text style={styles.monthTitle}>{nombresMeses[mesActualIndex]} {anioActual}</Text>
-            <Text style={styles.monthNav}>Mes actual</Text>
           </View>
-          
-          <View style={styles.weekDays}>
-            {["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"].map((d) => (
-              <Text key={d} style={styles.weekDayText}>{d}</Text>
-            ))}
-          </View>
-
           <View style={styles.daysGrid}>
             {[...Array(diasEnElMes)].map((_, i) => {
               const day = i + 1;
@@ -139,13 +133,7 @@ export default function AgendarCita() {
                     selectedDay === day && styles.daySelected,
                     esPasado && { opacity: 0.15 }
                   ]}
-                  onPress={() => {
-                    setSelectedDay(day);
-                    
-                    // BUSCAMOS LA PRIMERA HORA DISPONIBLE DE ESE DÍA
-                    const primeraDisponible = horarios.find(h => !verificarSiYaPaso(h));
-                    setSelectedTime(primeraDisponible || ""); 
-                  }}
+                  onPress={() => setSelectedDay(day)}
                 >
                   <Text style={[styles.dayText, selectedDay === day && styles.dayTextSelected]}>
                     {day}
@@ -156,7 +144,7 @@ export default function AgendarCita() {
           </View>
         </View>
 
-        {/* HORARIOS (Aquí está la magia del bloqueo) */}
+        {/* HORARIOS (Aquí se aplica el bloqueo real) */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Horarios disponibles</Text>
           <View style={styles.timeGrid}>
@@ -186,19 +174,19 @@ export default function AgendarCita() {
           </View>
         </View>
 
-        {/* RESUMEN */}
+        {/* RESUMEN (Costo $800 / Anticipo $400) */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Resumen de cita</Text>
+          <Text style={styles.sectionTitle}>Resumen</Text>
           <Text style={styles.resumenMain}>
-            Día {selectedDay} de {nombresMeses[mesActualIndex]} · {selectedTime ? selectedTime : "Selecciona una hora"}
+            Día {selectedDay} de {nombresMeses[mesActualIndex]} · {selectedTime || "---"}
           </Text>
           <Text style={styles.resumenDetail}>
-            Costo total: $800 · Pago de anticipo: $400
+            Consulta: $800 · Anticipo requerido: $400
           </Text>
         </View>
 
         <TouchableOpacity style={styles.mainButton} onPress={handleAgendar}>
-          <Text style={styles.mainButtonText}>Continuar al pago</Text>
+          <Text style={styles.mainButtonText}>Continuar con anticipo</Text>
         </TouchableOpacity>
         
       </ScrollView>
@@ -219,15 +207,11 @@ const styles = StyleSheet.create({
   badge: { backgroundColor: "#E6FFFA", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, alignSelf: "flex-start" },
   badgeText: { color: "#319795", fontSize: 12, fontWeight: "bold" },
   sectionCard: { backgroundColor: "#FFF", padding: 15, borderRadius: 20, borderWidth: 1, borderColor: "#E2E8F0", marginBottom: 15 },
-  calendarHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  monthTitle: { fontWeight: "bold", fontSize: 16 },
-  monthNav: { color: "#A0AEC0", fontSize: 12 },
-  weekDays: { flexDirection: "row", justifyContent: "flex-start", marginBottom: 10 },
-  weekDayText: { fontSize: 12, color: "#718096", width: "14.28%", textAlign: "center" },
-  daysGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-around" },
-  dayButton: { width: 35, height: 35, justifyContent: "center", alignItems: "center", marginBottom: 5 },
+  monthTitle: { fontWeight: "bold", fontSize: 16, marginBottom: 15 },
+  daysGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  dayButton: { width: 40, height: 40, justifyContent: "center", alignItems: "center", marginBottom: 5 },
   daySelected: { backgroundColor: "#345195", borderRadius: 10 },
-  dayText: { fontSize: 14, fontWeight: "600" },
+  dayText: { fontSize: 14, fontWeight: "600", color: "#2D3748" },
   dayTextSelected: { color: "#FFF" },
   sectionTitle: { fontSize: 15, fontWeight: "bold", marginBottom: 15, color: "#2D3748" },
   timeGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
