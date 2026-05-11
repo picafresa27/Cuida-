@@ -122,7 +122,7 @@ export default function BuscarMedico() {
         <Text style={styles.brand}>Cuida+</Text>
         <Text style={styles.titulo}>Buscar médico</Text>
         <Text style={styles.subtitulo}>
-          Filtra por especialidad, sede y disponibilidad.
+          Filtra por especialidad, Sucursal y disponibilidad.
         </Text>
       </View>
 

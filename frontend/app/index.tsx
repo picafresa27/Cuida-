@@ -1,8 +1,8 @@
 import { Link, useRouter } from "expo-router";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import {
   Alert,
-  Image, // <-- Importamos Image
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -10,69 +10,84 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { UserContext } from "../context/userContext";
 
 export default function LoginScreen() {
   const router = useRouter();
-
+  const { setUsuario } = useContext(UserContext);
+  
   // Estados para guardar lo que el usuario escribe
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Completa todos los campos");
+  if (!email || !password) {
+    Alert.alert("Error", "Completa todos los campos");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+  "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/login",
+  {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      correo: email,
+      password: password,
+    }),
+  }
+);
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : {};
+
+    if (!res.ok) {
+      Alert.alert("Error", data.error || "No se pudo iniciar sesión");
       return;
     }
 
-    try {
-      // Hacemos petición POST a la nueva ruta /login
-      const res = await fetch(
-        "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            correo: email.trim(),
-            password: password.trim(),
-          }),
-        }
-      );
-      
-      const data = await res.json();
+    Alert.alert("Éxito", "Inicio de sesión exitoso");
 
-      if (res.ok) {
-        console.log("Login exitoso:", data.usuario);
-        
-        // SI EXISTE → entra y manda el nombre a la siguiente pantalla
-        router.replace({
-          pathname: "/(tabs)",
-          params: { nombre: data.usuario.nombres }, 
-        });
-      } else {
-        Alert.alert("Error", data.error || "Usuario o contraseña incorrectos");
-      }
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Error", "No se pudo conectar al servidor de Cuida+");
-    }
-  };
+    /*router.replace({
+      pathname: "/(tabs)",
+      params: {
+        nombre: data.usuario.nombres,
+      },
+    });*/
+
+    // Guardar usuario globalmente
+    setUsuario(data.usuario);
+
+    // Navegar
+    router.replace("/(tabs)");
+
+  } catch (error) {
+    console.log("Error login:", error);
+
+    Alert.alert(
+      "Error",
+      "No se pudo conectar al servidor"
+    );
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* KeyboardAvoidingView evita que el teclado tape los inputs al escribir */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          
-          {/* LOGO RESTAURADO */}
+          {/* Logo */}
           <Image
-            source={require("./img/logo_cuida+.jpg")} // <-- Ruta para cuando img está dentro de app
+            source={require("./img/logo_cuida+.png")}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -80,7 +95,8 @@ export default function LoginScreen() {
           {/* Encabezado */}
           <Text style={styles.titulo}>Iniciar sesión</Text>
           <Text style={styles.subtitulo}>
-            Accede a tu cuenta para gestionar citas, consultas y seguimiento médico.
+            Accede a tu cuenta para gestionar citas, consultas y seguimiento
+            médico.
           </Text>
 
           {/* Formulario */}
@@ -106,7 +122,7 @@ export default function LoginScreen() {
                 style={styles.input}
                 placeholder=".........."
                 placeholderTextColor="#A0AEC0"
-                secureTextEntry={true}
+                secureTextEntry={true} // Oculta el texto con bolitas
                 value={password}
                 onChangeText={setPassword}
               />
@@ -121,6 +137,7 @@ export default function LoginScreen() {
                 <Text style={styles.textoBlanco}>Entrar</Text>
               </TouchableOpacity>
 
+              {/* Enlace a la otra pantalla si ya tienes el archivo registro.tsx */}
               {/*@ts-ignore*/}
               <Link href="/registro" asChild>
                 <TouchableOpacity style={styles.botonSecundario}>
@@ -143,14 +160,14 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFFFF", // Blanco puro
   },
   scrollContent: {
     alignItems: "center",
     paddingHorizontal: 30,
     paddingVertical: 40,
   },
-  logo: { // <-- Agregamos el estilo del logo
+  logo: {
     width: 180,
     height: 180,
     marginBottom: 10,
@@ -191,14 +208,14 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 15,
     fontSize: 16,
-    color: "#2D3748",
+    color: "#2D3748"
   },
   buttonContainer: {
     marginTop: 10,
     gap: 15,
   },
   botonPrimario: {
-    backgroundColor: "#345195",
+    backgroundColor: "#345195", // Azul Cuida+
     paddingVertical: 18,
     borderRadius: 12,
     alignItems: "center",
@@ -228,7 +245,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   textoForgot: {
-    color: "#41A69A",
+    color: "#41A69A", // El verde turquesa dellogo para el link
     fontSize: 14,
     fontWeight: "600",
     textDecorationLine: "underline",

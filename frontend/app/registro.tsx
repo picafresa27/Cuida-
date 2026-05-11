@@ -2,11 +2,11 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import { useState } from "react";
+// 1. Quitamos SafeAreaView de aquí
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,10 +15,13 @@ import {
   View,
 } from "react-native";
 
+// 2. Lo importamos de la librería especializada
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 export default function Registro() {
-  // Estados
+  // ... (Tus estados y funciones se mantienen exactamente igual)
   const [nombre, setNombre] = useState("");
-  const [apellidos, setApellidos] = useState(""); // Nuevo: Azure pide Apellidos
+  const [apellidos, setApellidos] = useState(""); 
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
@@ -28,7 +31,6 @@ export default function Registro() {
   const [password, setPassword] = useState("");
   const [confirmar, setConfirmar] = useState("");
 
-  // Formateador de teléfono (Mantiene tu lógica original)
   const manejarCambioTelefono = (texto: string) => {
     const soloNumeros = texto.replace(/\D/g, "");
     let formateado = "";
@@ -51,180 +53,105 @@ export default function Registro() {
     }
   };
 
-  // Función para crear usuario conectando al Backend
   const crearUsuario = async () => {
-    // 1. Validaciones básicas
+    // ... (Toda tu lógica de validación y fetch se queda igual)
     if (!nombre || !apellidos || !correo || !password || !telefono || !fechaNacimiento || !genero) {
       Alert.alert("Error", "Completa todos los campos obligatorios");
       return;
     }
 
     const regexLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-    if (!regexLetras.test(nombre)) {
-      Alert.alert("Nombre no válido", "El nombre solo debe contener letras");
-      return;
-    }
-
-    if (!regexLetras.test(apellidos)) {
-      Alert.alert("Apellido no válido", "Los apellidos solo deben contener letras");
+    if (!regexLetras.test(nombre) || !regexLetras.test(apellidos)) {
+      Alert.alert("Error", "Nombre o apellidos no válidos");
       return;
     }
 
     const regexCorreo = /^[^\s@]+@[^\s@]+\.com$/;
     if (!regexCorreo.test(correo.toLowerCase().trim())) {
-      Alert.alert(
-        "Correo no válido", 
-        "Por favor, usa un correo valido"
-      );
+      Alert.alert("Correo no válido", "Por favor, usa un correo válido");
       return;
     }
 
-    const digitosTelefono = telefono.replace(/\D/g, ""); // Quitamos los espacios para contar
+    const digitosTelefono = telefono.replace(/\D/g, "");
     if (digitosTelefono.length !== 10) {
-      Alert.alert("Error", "El número de teléfono debe tener exactamente 10 dígitos");
+      Alert.alert("Error", "El teléfono debe tener 10 dígitos");
       return;
     }
 
-    if (password !== confirmar) {
-      Alert.alert("Error", "Las contraseñas no coinciden");
-      return;
-    }
-
-    if(password.length < 8){
-      Alert.alert("Error", "La contraseña debe de tener minimo 8 caracteres");
+    if (password !== confirmar || password.length < 8) {
+      Alert.alert("Error", "Revisa la contraseña (mínimo 8 caracteres y que coincidan)");
       return;
     }
 
     try {
-      /**
-       * IMPORTANTE: 
-       * Reemplaza '192.168.X.X' con la IP que obtuviste en el comando 'ipconfig'.
-       */
-      const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/registro".trim();
-      
+      const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/registro";
       const res = await fetch(URL_BACKEND, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nombre: nombre,
-          apellidos: apellidos,
-          fechaNacimiento: fechaNacimiento, // Debe ser formato YYYY-MM-DD
+          nombre,
+          apellidos,
+          fechaNacimiento,
           telefono: telefono.replace(/\D/g, ""),
           correo: correo.trim(),
-          genero: genero === "Hombre" ? "M" : "F", // Azure espera un solo caracter (CHAR(1))
-          password: password,
+          genero: genero === "Hombre" ? "M" : "F",
+          password,
         }),
       });
 
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-
       if (res.ok) {
-        Alert.alert("Éxito", "¡Paciente registrado en CuidaPlus!");
-        router.replace({
-          pathname: "/(tabs)",
-          params: { nombre: nombre },
-        });
-
-        // Limpiar campos
-        setNombre("");
-        setApellidos("");
-        setCorreo("");
-        setTelefono("");
-        setFechaNacimiento("");
-        setGenero("");
-        setPassword("");
-        setConfirmar("");
+        Alert.alert("Éxito", "¡Paciente registrado!");
+        router.replace({ pathname: "/(tabs)", params: { nombre } });
       } else {
-        Alert.alert("Error de Registro", data.error || "No se pudo guardar el usuario");
+        const data = await res.json();
+        Alert.alert("Error", data.error || "No se pudo guardar");
       }
     } catch (error) {
-      console.log("Error de conexión:", error);
-      Alert.alert("Error", "No se pudo conectar al servidor. Verifica que el backend esté corriendo y la IP sea correcta.");
+      Alert.alert("Error", "Error de conexión con el servidor");
     }
   };
 
   return (
+    // 3. El contenedor principal con flex: 1
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }} >
-        <ScrollView contentContainerStyle={styles.content}>
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.logo}>Cuida+</Text>
           <Text style={styles.title}>Crear cuenta</Text>
           <Text style={styles.subtitle}>
             Completa tus datos para acceder a citas y seguimiento médico.
           </Text>
 
+          {/* --- Campos del formulario --- */}
           <Text style={styles.label}>Nombres</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ejem. Edgar"
-            value={nombre}
-            onChangeText={setNombre}
-          />
+          <TextInput style={styles.input} placeholder="Ejem. Edgar" value={nombre} onChangeText={setNombre} />
 
           <Text style={styles.label}>Apellidos</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ejem. López"
-            value={apellidos}
-            onChangeText={setApellidos}
-          />
+          <TextInput style={styles.input} placeholder="Ejem. López" value={apellidos} onChangeText={setApellidos} />
 
           <Text style={styles.label}>Correo electrónico</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="correo@email.com"
-            keyboardType="email-address"
-            value={correo}
-            onChangeText={setCorreo}
-          />
+          <TextInput style={styles.input} placeholder="correo@email.com" keyboardType="email-address" value={correo} onChangeText={setCorreo} />
 
           <Text style={styles.label}>Teléfono</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="667 123 4567"
-            value={telefono}
-            onChangeText={manejarCambioTelefono}
-            keyboardType="numeric"
-            maxLength={12}
-          />
+          <TextInput style={styles.input} placeholder="667 123 4567" value={telefono} onChangeText={manejarCambioTelefono} keyboardType="numeric" maxLength={12} />
 
-          <Text style={styles.label}>Fecha de Nacimiento (YYYY-MM-DD)</Text>
+          <Text style={styles.label}>Fecha de Nacimiento</Text>
           <TouchableOpacity onPress={() => setShowPicker(true)}>
             <View pointerEvents="none"> 
-              <TextInput
-                style={[
-                  styles.input, 
-                  { color: "#1A202C" } 
-                ]}
-                placeholder="Selecciona tu fecha"
-                placeholderTextColor="#A0AEC0"
-                value={fechaNacimiento}
-                editable={false}
-              />
+              <TextInput style={styles.input} placeholder="Selecciona tu fecha" value={fechaNacimiento} editable={false} />
             </View>
           </TouchableOpacity>
+
           {showPicker && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display="default"
-              onChange={onChange}
-              maximumDate={new Date()}
-            />
+            <DateTimePicker value={date} mode="date" display="default" onChange={onChange} maximumDate={new Date()} />
           )}
 
           <Text style={styles.label}>Género</Text>
           <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={genero}
-              onValueChange={(itemValue) => setGenero(itemValue)}
-              style={styles.picker}
-            >
+            <Picker selectedValue={genero} onValueChange={setGenero} style={styles.picker}>
               <Picker.Item label="Selecciona un género" value="" enabled={false} />
               <Picker.Item label="Hombre" value="Hombre" />
               <Picker.Item label="Mujer" value="Mujer" />
@@ -232,35 +159,30 @@ export default function Registro() {
           </View>
 
           <Text style={styles.label}>Contraseña</Text>
-          <TextInput
-            style={styles.input}
-            secureTextEntry
-            placeholder="********"
-            value={password}
-            onChangeText={setPassword}
-          />
+          <TextInput style={styles.input} secureTextEntry placeholder="********" value={password} onChangeText={setPassword} />
 
           <Text style={styles.label}>Confirmar Contraseña</Text>
-          <TextInput
-            style={styles.input}
-            secureTextEntry
-            placeholder="********"
-            value={confirmar}
-            onChangeText={setConfirmar}
-          />
+          <TextInput style={styles.input} secureTextEntry placeholder="********" value={confirmar} onChangeText={setConfirmar} />
 
           <TouchableOpacity style={styles.button} onPress={crearUsuario}>
             <Text style={styles.buttonText}>Crear cuenta en Cuida+</Text>
           </TouchableOpacity>
         </ScrollView>
-        </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F6F8" },
-  content: { padding: 20 },
+  // Asegúrate de que el contenedor tenga flex: 1 y el mismo fondo de tu app
+  container: { 
+    flex: 1, 
+    backgroundColor: "#F4F6F8" 
+  },
+  content: { 
+    padding: 20,
+    paddingBottom: 40 // Espacio extra al final para que el botón no quede pegado
+  },
   logo: { fontSize: 18, fontWeight: "600", color: "#3A5BA0", marginBottom: 10 },
   title: { fontSize: 26, fontWeight: "bold" },
   subtitle: { color: "#6b7280", marginBottom: 20 },

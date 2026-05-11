@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import React, { useContext, useEffect, useState } from "react";
 import {
-    Pressable, SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity, View
+  Pressable, SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity, View
 } from 'react-native';
 import { io } from "socket.io-client";
 import { UserContext } from "../../context/userContext";
