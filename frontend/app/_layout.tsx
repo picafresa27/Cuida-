@@ -4,7 +4,7 @@ import { UserProvider } from '../context/userContext';
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider> {/* Esto habilita el cálculo de zonas seguras en toda la app */}
+    <SafeAreaProvider>
       <UserProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />

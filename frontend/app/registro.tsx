@@ -84,7 +84,7 @@ export default function Registro() {
     }
 
     try {
-      const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/registro";
+      const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/registro";
       const res = await fetch(URL_BACKEND, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -49,7 +49,7 @@ export default function PerfilScreen() {
     //console.log("4. Subiendo a Cloudinary");
 
     const resCloudinary = await fetch(
-      'https://api.cloudinary.com/v1_1/dji2j4zdz/image/upload',
+      'https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/upload',
       {
         method: 'POST',
         body: formData,
@@ -85,7 +85,7 @@ export default function PerfilScreen() {
     );*/
 
     const resBackend = await fetch(
-  'https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/actualizarFotoPerfil',
+  'https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/actualizarFotoPerfil',
   {
     method: 'POST',
     headers: {
@@ -129,7 +129,7 @@ const cerrarSesion = () => {
   setUsuario(null);
 
   // Ir al login
-  router.replace("/inicioSesion");
+  router.replace("../inicioSesion");
 };
 
   return (
@@ -153,11 +153,28 @@ const cerrarSesion = () => {
 
         {/* Opciones de Configuración */}
         <View style={styles.menuContainer}>
-          <MenuOption icon="person-outline" label="Datos Personales" />
-          <MenuOption icon="card-outline" label="Métodos de Pago" />
-          <MenuOption icon="notifications-outline" label="Notificaciones" />
-          <MenuOption icon="shield-checkmark-outline" label="Seguridad" />
-          <MenuOption icon="help-circle-outline" label="Ayuda y Soporte" />
+          <MenuOption 
+            icon="person-outline" 
+            label="Datos Personales" 
+            onPress={() => router.push("../interfaces/datosPersonales")} 
+        />
+
+        <MenuOption 
+            icon="card-outline" 
+            label="Métodos de Pago" 
+            onPress={() => router.push("../metodosPagoTab")} 
+        />
+        <MenuOption icon="notifications-outline" label="Notificaciones" />
+          <MenuOption 
+            icon="shield-checkmark-outline" 
+            label="Seguridad" 
+            onPress={() => router.push("../interfaces/seguridad")} 
+          />
+          <MenuOption 
+            icon="help-circle-outline" 
+            label="Ayuda y Soporte" 
+            onPress={() => router.push("../interfaces/ayudaSoporte")}
+          />
           
           <Pressable style={styles.logoutButton} onPress={cerrarSesion}>
             <Ionicons name="log-out-outline" size={22} color="#FF4B4B" />
@@ -170,10 +187,9 @@ const cerrarSesion = () => {
   );
 }
 
-// Componente pequeño para las filas del menú
-function MenuOption({ icon, label }: { icon: any, label: string }) {
+function MenuOption({ icon, label, onPress }: { icon: any, label: string, onPress?: () => void }) {
   return (
-    <Pressable style={styles.menuOption}>
+    <Pressable style={styles.menuOption} onPress={onPress}>
       <View style={styles.menuLeft}>
         <Ionicons name={icon} size={22} color="#345195" />
         <Text style={styles.menuLabel}>{label}</Text>

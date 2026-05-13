@@ -337,3 +337,33 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Servidor de CuidaPlus corriendo con Sockets en el puerto ${PORT} 🚀`);
 });
+
+app.put("/actualizar-perfil/:id", async (req, res) => {
+    const { id } = req.params;
+    const { nombre, apellidos, telefono, correo, password } = req.body;
+
+    try {
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("id", sql.Int, id)
+            .input("nombre", sql.VarChar, nombre)
+            .input("apellidos", sql.VarChar, apellidos)
+            .input("telefono", sql.VarChar, telefono)
+            .input("correo", sql.VarChar, correo)
+            .input("password", sql.VarChar, password)
+            .query(`
+                UPDATE Paciente 
+                SET Nombres = @nombre, 
+                    Apellidos = @apellidos, 
+                    Telefono = @telefono,
+                    Correo = @correo,
+                    Password = @password
+                WHERE IdPaciente = @id
+            `);
+
+        res.json({ mensaje: "Perfil actualizado correctamente" });
+    } catch (err) {
+        console.error("Error al actualizar:", err);
+        res.status(500).json({ error: err.message });
+    }
+});

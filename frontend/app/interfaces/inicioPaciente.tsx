@@ -1,22 +1,23 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from "expo-router";
-import React, { useContext, useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+
 import {
-  Pressable, SafeAreaView,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity, View
-} from 'react-native';
-import { io } from "socket.io-client";
-import { UserContext } from "../../context/userContext";
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 // 1. CONFIGURACIÓN DEL SOCKET
-const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/inicioPaciente";
+const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/usuarios";
 const socket = io(URL_BACKEND);
 
 export default function HomePaciente() {
-  const { usuario } = useContext(UserContext);
+  const { nombre } = useLocalSearchParams();
   const router = useRouter();
 
   const [especialidadActiva, setEspecialidadActiva] = useState("Medicina general");
@@ -40,42 +41,27 @@ export default function HomePaciente() {
         {/* Titulos */}
         <View style={styles.header}>
           <Text style={styles.brand}>Cuida+</Text>
-          <Text style={styles.welcome}>Hola, {usuario?.nombres || "Usuario"}</Text>
+          <Text style={styles.welcome}>Hola, {nombre || "Usuario"}</Text>
           <Text style={styles.subtitle}>
             Encuentra especialidades, agenda tu próxima cita y revisa tus
             consultas activas.
           </Text>
         </View>
 
-        {/* Buscador - Estilo Original con Lupa */}
-<View style={styles.searchWrapper}>
-  <Pressable
-    onPress={() => router.push("/(tabs)/buscarMedico")}
-    style={({ pressed }) => [
-      styles.fakeSearchInput,
-      { 
-        opacity: pressed ? 0.8 : 1,
-      }
-    ]}
-  >
-    <View pointerEvents="none" style={styles.innerSearch}>
-      {/* Icono de Lupa */}
-      <Ionicons 
-        name="search-outline" 
-        size={20} 
-        color="#718096" 
-        style={{ marginRight: 10 }} 
-      />
-      <Text style={styles.fakeSearchPlaceholder}>Buscar médicos</Text>
-    </View>
-  </Pressable>
-</View>
+        {/* Buscador */}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar médico o especialidad"
+            placeholderTextColor="#A0AEC0"
+          />
+        </View>
 
         {/* Menú de Opciones */}
         <View style={styles.menuGrid}>
           <TouchableOpacity
             style={styles.menuCard}
-            onPress={() => router.push("/(tabs)/buscarMedico")}
+            onPress={() => router.push("../interfaces/buscarMedico")}
           >
             <Text style={styles.menuTitle}>Buscar médico</Text>
             <Text style={styles.menuSubtitle}>Especialidades y perfiles</Text>
@@ -83,7 +69,7 @@ export default function HomePaciente() {
 
           <TouchableOpacity
             style={styles.menuCard}
-            onPress={() => router.push("/(tabs)/misCitas")}
+            onPress={() => router.push("../interfaces/misCitas")}
           >
             <Text style={styles.menuTitle}>Mis citas</Text>
             <Text style={styles.menuSubtitle}>Próximas y pasadas</Text>
@@ -96,12 +82,12 @@ export default function HomePaciente() {
         </View>
 
         {/* Cita proxima */}
-        <TouchableOpacity
+        <TouchableOpacity 
           style={styles.appointmentCard}
           activeOpacity={0.7}
           onPress={() => {
             router.push({
-              pathname: "/(tabs)/detalleCita",
+              pathname: "../interfaces/detalleCita",
               params: {
                 doctor: "Dra. Ana Beltrán",
                 especialidad: "Cardiología",
@@ -127,9 +113,9 @@ export default function HomePaciente() {
         </TouchableOpacity>
 
         {/* Botón nueva cita */}
-        <TouchableOpacity
-          style={styles.mainButton}
-          onPress={() => router.push("/(tabs)/buscarMedico")}
+        <TouchableOpacity 
+          style={styles.mainButton} 
+          onPress={() => router.push("../interfaces/buscarMedico")}
         >
           <Text style={styles.mainButtonText}>Agendar nueva cita</Text>
         </TouchableOpacity>
@@ -151,16 +137,16 @@ export default function HomePaciente() {
               const esActiva = especialidadActiva === item;
 
               return (
-                <TouchableOpacity
-                  key={item}
+                <TouchableOpacity 
+                  key={item} 
                   onPress={() => setEspecialidadActiva(item)} // Cambia el foco al tocar
                   style={[
-                    styles.tag,
+                    styles.tag, 
                     esActiva && styles.tagActiva // Si es activa, aplica estilo extra
                   ]}
                 >
                   <Text style={[
-                    styles.tagText,
+                    styles.tagText, 
                     esActiva && styles.tagTextActiva // Si es activa, cambia el color de letra
                   ]}>
                     {item}
@@ -189,9 +175,10 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontSize: 22,
+    marginTop: 25,
     fontWeight: "bold",
     color: "#345195",
-    marginBottom: 5,
+    margin: 5,
   },
   welcome: {
     fontSize: 28,
@@ -297,7 +284,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   specialtiesSection: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#FFFFFF",
     padding: 20,
     borderRadius: 20,
     borderWidth: 1,
@@ -328,37 +315,5 @@ const styles = StyleSheet.create({
   },
   tagTextActiva: {
     color: "#FFFFFF", // Blanco cuando está seleccionada
-  },
-  searchPressable: {
-    marginHorizontal: 20,
-    marginVertical: 15,
-  },
-  searchWrapper: {
-    marginBottom: 25,
-    width: '100%', // Asegura que use todo el ancho disponible dentro del padding del padre
-  },
-  fakeSearchInput: {
-    backgroundColor: '#Ffff',
-    height: 55,
-    borderRadius: 15,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    // Sombra para que haga juego con las tarjetas de abajo
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#E2E8F0", // Usamos el mismo color de borde que tus tarjetas
-  },
-  fakeSearchPlaceholder: {
-    color: '#9CA3AF',
-    fontSize: 16,
-    fontFamily: 'Montserrat', // Tu fuente de marca
-  },
-  innerSearch: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
 });
