@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
   try {
     const res = await fetch(
-  "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/login",
+  "https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/login",
   {
     method: "POST",
     headers: {

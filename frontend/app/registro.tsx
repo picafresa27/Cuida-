@@ -2,6 +2,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import { useState } from "react";
+import { Ionicons } from '@expo/vector-icons';
 // 1. Quitamos SafeAreaView de aquí
 import {
   Alert,
@@ -21,15 +22,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function Registro() {
   // ... (Tus estados y funciones se mantienen exactamente igual)
   const [nombre, setNombre] = useState("");
-  const [apellidos, setApellidos] = useState(""); 
+  const [apellidos, setApellidos] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
-  const [date, setDate] = useState(new Date()); 
-  const [showPicker, setShowPicker] = useState(false); 
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
   const [genero, setGenero] = useState("");
   const [password, setPassword] = useState("");
   const [confirmar, setConfirmar] = useState("");
+  const [verPassword, setVerPassword] = useState(true);
 
   const manejarCambioTelefono = (texto: string) => {
     const soloNumeros = texto.replace(/\D/g, "");
@@ -43,7 +45,7 @@ export default function Registro() {
   };
 
   const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowPicker(false); 
+    setShowPicker(false);
     if (selectedDate) {
       setDate(selectedDate);
       const año = selectedDate.getFullYear();
@@ -84,7 +86,7 @@ export default function Registro() {
     }
 
     try {
-      const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/registro";
+      const URL_BACKEND = "https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/registro";
       const res = await fetch(URL_BACKEND, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,7 +142,7 @@ export default function Registro() {
 
           <Text style={styles.label}>Fecha de Nacimiento</Text>
           <TouchableOpacity onPress={() => setShowPicker(true)}>
-            <View pointerEvents="none"> 
+            <View pointerEvents="none">
               <TextInput style={styles.input} placeholder="Selecciona tu fecha" value={fechaNacimiento} editable={false} />
             </View>
           </TouchableOpacity>
@@ -158,12 +160,46 @@ export default function Registro() {
             </Picker>
           </View>
 
+          {/* ... después del campo de Género */}
+
           <Text style={styles.label}>Contraseña</Text>
-          <TextInput style={styles.input} secureTextEntry placeholder="********" value={password} onChangeText={setPassword} />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.inputPassword}
+              secureTextEntry={verPassword}
+              placeholder="********"
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setVerPassword(!verPassword)} style={styles.eyeIcon}>
+              <Ionicons
+                name={verPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={22}
+                color="#3A5BA0"
+              />
+            </TouchableOpacity>
+          </View>
 
+          {/* AQUÍ VA EL CAMPO DE CONFIRMAR CONTRASEÑA */}
           <Text style={styles.label}>Confirmar Contraseña</Text>
-          <TextInput style={styles.input} secureTextEntry placeholder="********" value={confirmar} onChangeText={setConfirmar} />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.inputPassword}
+              secureTextEntry={verPassword}
+              placeholder="********"
+              value={confirmar}
+              onChangeText={setConfirmar}
+            />
+            <TouchableOpacity onPress={() => setVerPassword(!verPassword)} style={styles.eyeIcon}>
+              <Ionicons
+                name={verPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={22}
+                color="#3A5BA0"
+              />
+            </TouchableOpacity>
+          </View>
 
+          {/* El botón siempre queda al final */}
           <TouchableOpacity style={styles.button} onPress={crearUsuario}>
             <Text style={styles.buttonText}>Crear cuenta en Cuida+</Text>
           </TouchableOpacity>
@@ -175,11 +211,11 @@ export default function Registro() {
 
 const styles = StyleSheet.create({
   // Asegúrate de que el contenedor tenga flex: 1 y el mismo fondo de tu app
-  container: { 
-    flex: 1, 
-    backgroundColor: "#F4F6F8" 
+  container: {
+    flex: 1,
+    backgroundColor: "#F4F6F8"
   },
-  content: { 
+  content: {
     padding: 20,
     paddingBottom: 40 // Espacio extra al final para que el botón no quede pegado
   },
@@ -192,4 +228,22 @@ const styles = StyleSheet.create({
   picker: { height: 55, width: "100%" },
   button: { marginTop: 25, backgroundColor: "#3A5BA0", padding: 15, borderRadius: 12, alignItems: "center" },
   buttonText: { color: "#fff", fontWeight: "bold" },
+  // Dentro de styles = StyleSheet.create({ ... })
+
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#cbd5e0",
+  },
+  inputPassword: {
+    flex: 1,
+    padding: 14,
+    // Ya no necesita borde aquí porque lo tiene el contenedor
+  },
+  eyeIcon: {
+    paddingHorizontal: 15,
+  },
 });

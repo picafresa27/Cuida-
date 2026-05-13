@@ -1,3 +1,4 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -9,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
 
 export default function MetodoPago() {
   const router = useRouter();
@@ -48,7 +48,7 @@ export default function MetodoPago() {
 
     try {
       // RECUERDA: El puerto 3000 debe estar en PUBLIC en VS Code
-      const response = await fetch("https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev//pagos", {
+      const response = await fetch("https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/pagos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

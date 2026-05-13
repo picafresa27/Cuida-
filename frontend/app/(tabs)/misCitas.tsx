@@ -67,7 +67,7 @@ export default function misCitas() {
   const obtenerCitas = async () => {
     try {
       const response = await fetch(
-        "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/mis-citas/1"
+        "https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/mis-citas/1"
       );
       const data = await response.json();
       setCitas(data);

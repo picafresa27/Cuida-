@@ -71,7 +71,7 @@ export default function DatosPersonales() {
     formData.append('upload_preset', 'cuida+');
 
     try {
-      const resCloudinary = await fetch('https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/upload', {
+      const resCloudinary = await fetch('https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/upload', {
         method: 'POST',
         body: formData,
       });
