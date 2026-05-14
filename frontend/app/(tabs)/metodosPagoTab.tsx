@@ -48,7 +48,7 @@ export default function MetodosPagoScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>{"< Volver"}</Text>
+          <Text style={styles.backText}>{"←"}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Métodos de Pago</Text>
         <View style={{ width: 60 }} />
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: "#E2E8F0",
   },
   backButton: { padding: 5, width: 60 },
-  backText: { color: "#345195", fontSize: 16, fontWeight: "600" },
+  backText: { color: "#345195", fontSize: 25, fontWeight: "600" },
   headerTitle: { fontSize: 18, fontWeight: "bold", color: "#1A202C" },
   scrollContent: { padding: 20 },
   instrucciones: { fontSize: 14, color: "#718096", marginBottom: 25, lineHeight: 20 },

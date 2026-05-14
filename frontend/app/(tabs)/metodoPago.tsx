@@ -1,3 +1,4 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -9,12 +10,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
 
 export default function MetodoPago() {
   const router = useRouter();
   
-  // CAPTURA DE DATOS: Si no llegan, usamos valores por defecto (||)
   const params = useLocalSearchParams();
   const idCita = params.idCita || "0";
   const montoAnticipo = params.montoAnticipo || "400";
@@ -47,7 +46,6 @@ export default function MetodoPago() {
     }
 
     try {
-      // RECUERDA: El puerto 3000 debe estar en PUBLIC en VS Code
       const response = await fetch("https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/pagos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
