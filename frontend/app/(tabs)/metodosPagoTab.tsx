@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: "#E2E8F0",
   },
   backButton: { padding: 5, width: 60 },
-  backText: { color: "#345195", fontSize: 25, fontWeight: "600" },
+  backText: { color: "#345195", fontSize: 25, fontWeight: "900" },
   headerTitle: { fontSize: 18, fontWeight: "bold", color: "#1A202C" },
   scrollContent: { padding: 20 },
   instrucciones: { fontSize: 14, color: "#718096", marginBottom: 25, lineHeight: 20 },

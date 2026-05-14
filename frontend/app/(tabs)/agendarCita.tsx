@@ -60,7 +60,7 @@ export default function AgendarCita() {
       const diaF = selectedDay.toString().padStart(2, '0');
       const fechaDB = `${anioActual}-${mesF}-${diaF}`;
 
-      const response = await fetch("https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/agendarCita", {
+      const response = await fetch("https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/agendarCita", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

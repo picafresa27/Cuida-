@@ -17,11 +17,11 @@ export default function misCitas() {
   const router = useRouter();
 
   // --- FUNCIÓN PARA FORMATEAR FECHA (Recibe el objeto 'cita' completo) ---
-  const formatearCita = (item) => {
-    const fRaw = item.fechaRaw || item.fecha;
-    const hRaw = item.horaRaw || item.hora;
+  const formatearCita = (item: any) => {
+    const fRaw = item.fechaRaw || item.fecha || item.Fecha;
+    const hRaw = item.horaRaw || item.hora || item.Hora;
 
-    if (!fRaw || !hRaw) return "Fecha pendiente";
+    if (!fRaw || !hRaw) return "Fecha no disponible";
 
     try {
       // 1. Extraemos los números de la fecha (2026-05-10)
@@ -67,7 +67,7 @@ export default function misCitas() {
   const obtenerCitas = async () => {
     try {
       const response = await fetch(
-        "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/mis-citas/1"
+        "https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/mis-citas/1"
       );
       const data = await response.json();
       setCitas(data);
@@ -83,6 +83,21 @@ export default function misCitas() {
       obtenerCitas();
     }, [])
   );
+
+  // --- LÓGICA DE FILTRADO ---
+const citasFiltradas = citas.filter((cita: any) => {
+  if (filtro === "Próximas") {
+    // Ajusta "Pendiente" según como lo devuelva tu SQL (ej: "Agendada")
+    return cita.Estado === "Pendiente"; 
+  }
+  if (filtro === "Pasadas") {
+    return cita.Estado === "Completada" || cita.Estado === "Finalizada";
+  }
+  if (filtro === "Canceladas") {
+    return cita.Estado === "Cancelada";
+  }
+  return true;
+});
 
   return (
     <SafeAreaView style={styles.container}>
@@ -121,42 +136,39 @@ export default function misCitas() {
         ) : citas.length === 0 ? (
           <Text style={styles.vacioText}>No hay citas registradas en la base de datos.</Text>
         ) : (
-          citas.map((cita) => {
-            // --- EL ARREGLO ESTÁ AQUÍ ---
-            // Antes tenías: formatearCita(cita.fechaRaw, cita.horaRaw) -> MAL
-            // Ahora pasamos el objeto completo:
-            const fechaFormateada = formatearCita(cita); 
+          citasFiltradas.map((cita: any) => {
+          const fechaFormateada = formatearCita(cita); 
 
-            return (
-              <View key={cita.IdCita} style={styles.card}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fechaTexto}>{fechaFormateada}</Text>
-                  <Text style={styles.doctorTexto}>Dr. {cita.nombreDoctor} {cita.apellidosDoctor}</Text>
-                  <Text style={styles.detalleTexto}>
-                    {cita.Especialidad} · {cita.Estado}
-                  </Text>
-                </View>
-
-                <TouchableOpacity 
-                  style={styles.verButton}
-                  onPress={() => {
-                    router.push({
-                      pathname: "/(tabs)/detalleCita", 
-                      params: { 
-                        doctor: `Dr. ${cita.nombreDoctor} ${cita.apellidosDoctor}`, 
-                        especialidad: cita.Especialidad,
-                        fecha: fechaFormateada,
-                        estado: cita.Estado
-                      }
-                    });
-                  }}
-                >
-                  <Text style={styles.verButtonText}>Ver</Text>
-                </TouchableOpacity>
+          return (
+            <View key={cita.IdCita} style={styles.card}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fechaTexto}>{fechaFormateada}</Text>
+                <Text style={styles.doctorTexto}>Dr. {cita.nombreDoctor} {cita.apellidosDoctor}</Text>
+                <Text style={styles.detalleTexto}>
+                  {cita.Especialidad} · {cita.Estado}
+                </Text>
               </View>
-            );
-          })
-        )}
+
+              <TouchableOpacity 
+                style={styles.verButton}
+                onPress={() => {
+                  router.push({
+                    pathname: "/(tabs)/detalleCita", 
+                    params: { 
+                      doctor: `Dr. ${cita.nombreDoctor} ${cita.apellidosDoctor}`, 
+                      especialidad: cita.Especialidad,
+                      fecha: fechaFormateada,
+                      estado: cita.Estado
+                    }
+                  });
+                }}
+              >
+                <Text style={styles.verButtonText}>Ver</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })
+      )}
       </ScrollView>
     </SafeAreaView>
   );

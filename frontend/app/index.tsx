@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
   try {
     const res = await fetch(
-  "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/login",
+  "https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/login",
   {
     method: "POST",
     headers: {
@@ -64,8 +64,16 @@ export default function LoginScreen() {
     // Guardar usuario globalmente
     setUsuario(data.usuario);
 
-    // Navegar
-    router.replace("/(tabs)");
+    const correoUsuario = email.toLowerCase();
+
+    if (correoUsuario.endsWith("@cuidaplus.com")) {
+      // Si el correo termina en @cuida+.com, va a la interfaz de doctor
+      // Asegúrate de tener creada la carpeta app/(doctor)
+      router.replace("../interfacesDoctor/inicioDoctor"); 
+    } else {
+      // Si es un correo normal, va a la interfaz de paciente (tabs)
+      router.replace("/(tabs)");
+    }
 
   } catch (error) {
     console.log("Error login:", error);
