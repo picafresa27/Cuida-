@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import API_URL from "../../config/api";
 import {
   Alert,
   SafeAreaView,
@@ -60,7 +61,7 @@ export default function AgendarCita() {
       const diaF = selectedDay.toString().padStart(2, '0');
       const fechaDB = `${anioActual}-${mesF}-${diaF}`;
 
-      const response = await fetch("https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/agendarCita", {
+      const response = await fetch(`${API_URL}/agendarCita`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

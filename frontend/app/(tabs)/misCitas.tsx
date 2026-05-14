@@ -1,4 +1,5 @@
 import { useFocusEffect, useRouter } from "expo-router";
+import API_URL from "../../config/api";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -67,7 +68,7 @@ export default function misCitas() {
   const obtenerCitas = async () => {
     try {
       const response = await fetch(
-        "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/mis-citas/1"
+        `${API_URL}/mis-citas/1`
       );
       const data = await response.json();
       setCitas(data);

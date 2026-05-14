@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
+import API_URL from "../../config/api";
 import React, { useContext, useEffect, useState } from "react";
 import {
   Pressable, SafeAreaView,
@@ -12,7 +13,7 @@ import { io } from "socket.io-client";
 import { UserContext } from "../../context/userContext";
 
 // 1. CONFIGURACIÓN DEL SOCKET
-const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/inicioPaciente";
+const URL_BACKEND = `${API_URL}/inicioPaciente`;
 const socket = io(URL_BACKEND);
 
 export default function HomePaciente() {

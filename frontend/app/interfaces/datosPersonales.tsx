@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import API_URL from "../../config/api";
 import React, { useContext, useEffect, useState } from "react";
 import {
   Alert,
@@ -71,7 +72,7 @@ export default function DatosPersonales() {
     formData.append('upload_preset', 'cuida+');
 
     try {
-      const resCloudinary = await fetch('https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/upload', {
+      const resCloudinary = await fetch('${API_URL}/upload', {
         method: 'POST',
         body: formData,
       });
@@ -79,7 +80,7 @@ export default function DatosPersonales() {
       const data = await resCloudinary.json();
 
       if (data.secure_url) {
-        const resBackend = await fetch('https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/actualizarFotoPerfil', {
+        const resBackend = await fetch('${API_URL}/actualizarFotoPerfil', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -101,7 +102,7 @@ export default function DatosPersonales() {
   const guardarCambiosTexto = async () => {
     try {
       const u = usuario as any;
-      const URL = `https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/actualizar-perfil/${u.id || u.IdPaciente}`;
+      const URL = `${API_URL}/actualizar-perfil/${u.id || u.IdPaciente}`;
       
       const res = await fetch(URL, {
         method: "PUT",

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import API_URL from "../../config/api";
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
@@ -49,7 +50,7 @@ export default function PerfilScreen() {
     //console.log("4. Subiendo a Cloudinary");
 
     const resCloudinary = await fetch(
-      'https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/upload',
+      `${API_URL}/upload`,
       {
         method: 'POST',
         body: formData,
@@ -85,7 +86,7 @@ export default function PerfilScreen() {
     );*/
 
     const resBackend = await fetch(
-  'https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/actualizarFotoPerfil',
+      `${API_URL}/actualizarFotoPerfil`,
   {
     method: 'POST',
     headers: {

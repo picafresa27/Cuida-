@@ -1,4 +1,5 @@
 import { useFocusEffect } from "expo-router"; // Para actualizar al entrar a la pestaña
+import API_URL from "../../config/api";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,7 +22,7 @@ export default function AgendaScreen() {
       // Por ahora usamos el ID 1, luego lo traerás del login
       const idPaciente = 1; 
       const response = await fetch(
-        `https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/mis-citas/${idPaciente}`
+        `${API_URL}/mis-citas/${idPaciente}`
       );
       const data = await response.json();
       setCitas(data);

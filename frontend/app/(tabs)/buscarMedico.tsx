@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 //import React from "react";
+import API_URL from "../../config/api";
 import { Ionicons } from '@expo/vector-icons';
 import {
   SafeAreaView,
@@ -59,7 +60,7 @@ export default function BuscarMedico() {
   const obtenerDoctores = async () => {
     try {
       const response = await fetch(
-        "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/doctores"
+        `${API_URL}/doctores`
       );
 
       const data = await response.json();

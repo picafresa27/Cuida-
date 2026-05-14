@@ -1,5 +1,6 @@
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Picker } from "@react-native-picker/picker";
+import API_URL from "../config/api";
 import { router } from "expo-router";
 import { useState } from "react";
 // 1. Quitamos SafeAreaView de aquí
@@ -84,7 +85,7 @@ export default function Registro() {
     }
 
     try {
-      const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/registro";
+      const URL_BACKEND = `${API_URL}/registro`;
       const res = await fetch(URL_BACKEND, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

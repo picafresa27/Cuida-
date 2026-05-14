@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import { io } from "socket.io-client";
+import API_URL from "../../config/api";
 
 import {
   SafeAreaView,
@@ -12,7 +13,7 @@ import {
 } from "react-native";
 
 // Configuración del Socket (mismo endpoint, diferente canal si fuera necesario)
-const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/usuarios";
+const URL_BACKEND = `${API_URL}/usuarios`;
 const socket = io(URL_BACKEND);
 
 export default function HomeDoctor() {

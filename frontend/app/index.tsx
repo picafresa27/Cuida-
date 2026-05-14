@@ -1,4 +1,5 @@
 import { Link, useRouter } from "expo-router";
+import API_URL from "../config/api";
 import { useContext, useState } from "react";
 import {
   Alert,
@@ -31,7 +32,7 @@ export default function LoginScreen() {
 
   try {
     const res = await fetch(
-  "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/login",
+  `${API_URL}/login`,
   {
     method: "POST",
     headers: {
