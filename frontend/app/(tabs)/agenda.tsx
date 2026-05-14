@@ -89,7 +89,9 @@ export default function AgendaScreen() {
           renderItem={renderCita}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refrescando} onRefresh={alRefrescar} color="#345195" />
+            <RefreshControl refreshing={refrescando}
+             onRefresh={alRefrescar}
+              colors={["#345195"]} />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>

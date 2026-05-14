@@ -10,12 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+<<<<<<< HEAD
 import API_URL from "../../config/api";
+=======
+>>>>>>> dd5d559f9ee721f6ade702ac0e6850ed9395de8a
 
 export default function MetodoPago() {
   const router = useRouter();
   
-  // CAPTURA DE DATOS: Si no llegan, usamos valores por defecto (||)
   const params = useLocalSearchParams();
   const idCita = params.idCita || "0";
   const montoAnticipo = params.montoAnticipo || "400";
@@ -50,6 +52,7 @@ export default function MetodoPago() {
     try {
       // RECUERDA: El puerto 3000 debe estar en PUBLIC en VS Code
       const response = await fetch(`${API_URL}/pagos`, {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
