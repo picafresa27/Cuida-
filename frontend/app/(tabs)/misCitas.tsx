@@ -67,7 +67,7 @@ export default function misCitas() {
   const obtenerCitas = async () => {
     try {
       const response = await fetch(
-        "https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/mis-citas/1"
+        "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/mis-citas/1"
       );
       const data = await response.json();
       setCitas(data);

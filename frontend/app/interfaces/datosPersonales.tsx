@@ -71,7 +71,7 @@ export default function DatosPersonales() {
     formData.append('upload_preset', 'cuida+');
 
     try {
-      const resCloudinary = await fetch('https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/upload', {
+      const resCloudinary = await fetch('https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/upload', {
         method: 'POST',
         body: formData,
       });
@@ -79,7 +79,7 @@ export default function DatosPersonales() {
       const data = await resCloudinary.json();
 
       if (data.secure_url) {
-        const resBackend = await fetch('https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/actualizarFotoPerfil', {
+        const resBackend = await fetch('https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/actualizarFotoPerfil', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

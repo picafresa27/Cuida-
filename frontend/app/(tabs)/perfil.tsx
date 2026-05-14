@@ -85,7 +85,7 @@ export default function PerfilScreen() {
     );*/
 
     const resBackend = await fetch(
-  'https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/actualizarFotoPerfil',
+  'https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/actualizarFotoPerfil',
   {
     method: 'POST',
     headers: {

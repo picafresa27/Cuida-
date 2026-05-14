@@ -12,7 +12,7 @@ import { io } from "socket.io-client";
 import { UserContext } from "../../context/userContext";
 
 // 1. CONFIGURACIÓN DEL SOCKET
-const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/inicioPaciente";
+const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/inicioPaciente";
 const socket = io(URL_BACKEND);
 
 export default function HomePaciente() {

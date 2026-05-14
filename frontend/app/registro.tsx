@@ -1,8 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Ionicons } from '@expo/vector-icons';
 // 1. Quitamos SafeAreaView de aquí
 import {
   Alert,
@@ -86,7 +86,7 @@ export default function Registro() {
     }
 
     try {
-      const URL_BACKEND = "https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/registro";
+      const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/registro";
       const res = await fetch(URL_BACKEND, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

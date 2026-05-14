@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 // Configuración del Socket (mismo endpoint, diferente canal si fuera necesario)
-const URL_BACKEND = "https://fuzzy-doodle-wr5qq4wjqwqg35jqx-3000.app.github.dev/usuarios";
+const URL_BACKEND = "https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/usuarios";
 const socket = io(URL_BACKEND);
 
 export default function HomeDoctor() {

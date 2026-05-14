@@ -21,7 +21,7 @@ export default function AgendaScreen() {
       // Por ahora usamos el ID 1, luego lo traerás del login
       const idPaciente = 1; 
       const response = await fetch(
-        `https://fluffy-space-yodel-q745gwgrj6qrc976g-3000.app.github.dev/mis-citas/${idPaciente}`
+        `https://effective-rotary-phone-q7455xw6q74xc6w5w-3000.app.github.dev/mis-citas/${idPaciente}`
       );
       const data = await response.json();
       setCitas(data);
