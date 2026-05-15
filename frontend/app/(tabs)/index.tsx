@@ -97,7 +97,7 @@ export default function HomePaciente() {
         {/* Encabezado */}
         <View style={styles.header}>
           <Text style={styles.brand}>Cuida+</Text>
-          <Text style={styles.welcome}>Hola, {usuario?.nombres || usuario?.nombre || "Usuario"}</Text>
+          <Text style={styles.welcome}>Hola, {usuario?.nombres || "Usuario"}</Text>
           <Text style={styles.subtitle}>
             Encuentra especialidades, agenda tu próxima cita y revisa tus consultas activas.
           </Text>

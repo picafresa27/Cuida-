@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import API_URL from "../../config/api";
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import API_URL from "../../config/api";
 import { UserContext } from "../../context/userContext";
 
 export default function PerfilScreen() {
@@ -21,7 +21,7 @@ export default function PerfilScreen() {
   }
 
   const resultado = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ['images'],
     allowsEditing: true,
     aspect: [1, 1],
     quality: 1,
@@ -50,7 +50,7 @@ export default function PerfilScreen() {
     //console.log("4. Subiendo a Cloudinary");
 
     const resCloudinary = await fetch(
-      `${API_URL}/upload`,
+      "https://api.cloudinary.com/v1_1/dji2j4zdz/image/upload",
       {
         method: 'POST',
         body: formData,
