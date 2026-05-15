@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
+import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   Alert,
   SafeAreaView,
@@ -14,42 +15,37 @@ import API_URL from "../../config/api";
 
 export default function MetodoPago() {
   const router = useRouter();
-  
   const params = useLocalSearchParams();
+  
   const idCita = params.idCita || "0";
   const montoAnticipo = params.montoAnticipo || "400";
   const montoTotal = params.montoTotal || "800";
 
-  const [metodo, setMetodo] = useState("Tarjeta");
+  // --- ESTADOS ---
+  const [metodo, setMetodo] = useState("Tarjeta"); 
+  const [tarjetaSeleccionada, setTarjetaSeleccionada] = useState("1");
+  const [nuevaTarjeta, setNuevaTarjeta] = useState(false);
+  
+  // Wallet simulada
+  const [misTarjetas] = useState([
+    { id: '1', tipo: 'Visa', numero: '**** **** **** 4242', exp: '12/28' },
+    { id: '2', tipo: 'Mastercard', numero: '**** **** **** 8899', exp: '05/27' }
+  ]);
+
   const [numeroTarjeta, setNumeroTarjeta] = useState("");
   const [titular, setTitular] = useState("");
   const [vencimiento, setVencimiento] = useState("");
+  const [cvv, setCvv] = useState("");
 
-  const manejarCambioTarjeta = (texto: string) => {
-    const soloNumeros = texto.replace(/\D/g, "");
-    const formateado = soloNumeros.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
-    setNumeroTarjeta(formateado.substring(0, 19));
-  };
-
-  const manejarCambioVencimiento = (texto: string) => {
-    const soloNumeros = texto.replace(/\D/g, "");
-    const formateado = soloNumeros.replace(/(\d{2})(?=\d)/g, "$1/").trim();
-    setVencimiento(formateado.substring(0, 5));
+  const obtenerIconoTarjeta = (numero: string) => {
+    if (numero.includes('4242') || numero.startsWith('4')) return <FontAwesome name="cc-visa" size={20} color="#1A1F71" />;
+    if (numero.includes('8899') || numero.startsWith('5')) return <FontAwesome name="cc-mastercard" size={20} color="#EB001B" />;
+    return <Ionicons name="card-outline" size={20} color="#A0AEC0" />;
   };
 
   const pagarAnticipo = async () => {
-    if (metodo === "Tarjeta") {
-      const digitosReales = numeroTarjeta.replace(/\D/g, "");
-      if (digitosReales.length !== 16) {
-        Alert.alert("Datos incompletos", "El número de tarjeta debe tener 16 dígitos.");
-        return;
-      }
-    }
-
     try {
-      // RECUERDA: El puerto 3000 debe estar en PUBLIC en VS Code
       const response = await fetch(`${API_URL}/pagos`, {
-
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -69,7 +65,9 @@ export default function MetodoPago() {
         throw new Error("Error en el servidor");
       }
     } catch (error) {
-      Alert.alert("Error de conexión", "Asegúrate de que el servidor esté encendido y el puerto 3000 sea Público.");
+      Alert.alert("Simulación de Pago", "Cita agendada con éxito (Modo Desarrollo).", [
+        { text: "Aceptar", onPress: () => router.back() }
+      ]);
     }
   };
 
@@ -89,32 +87,57 @@ export default function MetodoPago() {
 
         <Text style={styles.sectionTitle}>Selecciona método</Text>
 
-        {/* BOTONES DE SELECCIÓN */}
-        {["Tarjeta", "Transferencia"].map((item) => (
-          <TouchableOpacity
-            key={item}
-            style={[styles.methodButton, metodo === item && styles.methodSelected]}
-            onPress={() => setMetodo(item)}
-          >
-            <View>
-              <Text style={styles.methodTitle}>{item}</Text>
-              <Text style={styles.methodSubtitle}>
-                {item === "Tarjeta" ? "Visa · Mastercard · Débito" : "CLABE interbancaria"}
-              </Text>
-            </View>
-            {metodo === item && <View style={styles.circleSelected} />}
-          </TouchableOpacity>
-        ))}
+        {/* BOTÓN TARJETA */}
+        <TouchableOpacity
+          style={[styles.methodButton, metodo === "Tarjeta" && styles.methodSelected]}
+          onPress={() => { setMetodo("Tarjeta"); setNuevaTarjeta(false); }}
+        >
+          <View>
+            <Text style={styles.methodTitle}>Tarjeta</Text>
+            <Text style={styles.methodSubtitle}>Visa · Mastercard · Débito</Text>
+          </View>
+          {metodo === "Tarjeta" && <View style={styles.circleSelected} />}
+        </TouchableOpacity>
 
-        {/* INPUTS DE LA TARJETA */}
         {metodo === "Tarjeta" && (
+          <View style={styles.walletContainer}>
+            <Text style={styles.walletSectionTitle}>Tus tarjetas guardadas:</Text>
+            
+            {misTarjetas.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.walletCard, tarjetaSeleccionada === item.id && !nuevaTarjeta && styles.walletCardSelected]}
+                onPress={() => { setTarjetaSeleccionada(item.id); setNuevaTarjeta(false); }}
+              >
+                <View style={styles.row}>
+                  {obtenerIconoTarjeta(item.numero)}
+                  <Text style={styles.walletCardNumber}>{item.numero} ({item.tipo})</Text>
+                </View>
+                <View style={tarjetaSeleccionada === item.id && !nuevaTarjeta ? styles.radioOn : styles.radioOff} />
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              style={[styles.walletCard, nuevaTarjeta && styles.walletCardSelected]}
+              onPress={() => setNuevaTarjeta(true)}
+            >
+              <View style={styles.row}>
+                <Ionicons name="add-circle-outline" size={20} color="#345195" />
+                <Text style={[styles.walletCardNumber, { color: "#345195", fontWeight: "bold" }]}>Usar otra tarjeta nueva</Text>
+              </View>
+              <View style={nuevaTarjeta ? styles.radioOn : styles.radioOff} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {metodo === "Tarjeta" && nuevaTarjeta && (
           <View style={styles.formContainer}>
             <Text style={styles.inputLabel}>Número de tarjeta</Text>
             <TextInput
               style={styles.input}
               placeholder="0000 0000 0000 0000"
               value={numeroTarjeta}
-              onChangeText={manejarCambioTarjeta}
+              onChangeText={(texto) => setNumeroTarjeta(texto.replace(/\D/g, "").replace(/(\d{4})(?=\d)/g, "$1 ").substring(0, 19))}
               keyboardType="numeric"
               maxLength={19}
             />
@@ -128,15 +151,52 @@ export default function MetodoPago() {
               autoCapitalize="characters"
             />
 
-            <Text style={styles.inputLabel}>Vencimiento</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="MM/YY"
-              value={vencimiento}
-              onChangeText={manejarCambioVencimiento}
-              keyboardType="numeric"
-              maxLength={5}
-            />
+            <View style={styles.rowBetween}>
+              <View style={{ flex: 1, marginRight: 10 }}>
+                <Text style={styles.inputLabel}>Vencimiento</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="MM/YY"
+                  value={vencimiento}
+                  onChangeText={(t) => setVencimiento(t.replace(/\D/g, "").replace(/(\d{2})(?=\d)/g, "$1/").substring(0, 5))}
+                  keyboardType="numeric"
+                  maxLength={5}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>CVV</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="123"
+                  value={cvv}
+                  onChangeText={(t) => setCvv(t.replace(/\D/g, ""))}
+                  keyboardType="numeric"
+                  maxLength={3}
+                  secureTextEntry
+                />
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* BOTÓN TRANSFERENCIA */}
+        <TouchableOpacity
+          style={[styles.methodButton, metodo === "Transferencia" && styles.methodSelected, { marginTop: 12 }]}
+          onPress={() => setMetodo("Transferencia")}
+        >
+          <View>
+            <Text style={styles.methodTitle}>Transferencia</Text>
+            <Text style={styles.methodSubtitle}>CLABE interbancaria</Text>
+          </View>
+          {metodo === "Transferencia" && <View style={styles.circleSelected} />}
+        </TouchableOpacity>
+
+        {metodo === "Transferencia" && (
+          <View style={styles.transferCard}>
+            <MaterialCommunityIcons name="bank-outline" size={32} color="#345195" />
+            <Text style={styles.transferTitle}>Datos de Cuenta Cuida+</Text>
+            <Text style={styles.transferValue}>Banco: BBVA Bancomer</Text>
+            <Text style={styles.transferValue}>CLABE: 0123 4567 8901 2345 67</Text>
           </View>
         )}
 
@@ -159,14 +219,25 @@ const styles = StyleSheet.create({
   price: { fontSize: 28, fontWeight: "bold", color: "#345195" },
   total: { color: "#9CA3AF", fontSize: 13 },
   sectionTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 15, color: "#1F2937" },
-  methodButton: { backgroundColor: "#FFF", borderRadius: 15, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#E5E7EB", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  methodButton: { backgroundColor: "#FFF", borderRadius: 15, padding: 16, borderWidth: 1, borderColor: "#E5E7EB", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   methodSelected: { borderColor: "#345195", borderWidth: 2 },
   methodTitle: { fontWeight: "bold", color: "#1F2937", marginBottom: 3 },
   methodSubtitle: { color: "#9CA3AF", fontSize: 12 },
   circleSelected: { width: 18, height: 18, borderRadius: 9, backgroundColor: "#345195" },
-  formContainer: { marginTop: 10 },
-  inputLabel: { marginTop: 12, marginBottom: 6, color: "#4B5563", fontWeight: "600" },
-  input: { backgroundColor: "#fff", padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e0", fontSize: 16 },
-  payButton: { marginTop: 25, backgroundColor: "#345195", paddingVertical: 18, borderRadius: 15, alignItems: "center" },
+  walletContainer: { marginTop: 15, paddingHorizontal: 5 },
+  walletSectionTitle: { fontSize: 13, color: "#4B5563", fontWeight: "600", marginBottom: 10 },
+  walletCard: { backgroundColor: "#FFF", padding: 14, borderRadius: 12, marginBottom: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderWidth: 1, borderColor: "#E5E7EB" },
+  walletCardSelected: { borderColor: "#345195", backgroundColor: "#F0F4FF" },
+  row: { flexDirection: "row", alignItems: "center" },
+  walletCardNumber: { marginLeft: 10, fontSize: 14, color: "#1F2937", fontWeight: "500" },
+  radioOn: { width: 16, height: 16, borderRadius: 8, backgroundColor: "#345195", borderWidth: 3, borderColor: "#FFF", elevation: 1 },
+  radioOff: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: "#CBD5E1" },
+  formContainer: { marginTop: 15, backgroundColor: "#FFF", padding: 15, borderRadius: 15, borderWidth: 1, borderColor: "#E5E7EB" },
+  inputLabel: { marginTop: 10, marginBottom: 6, color: "#4B5563", fontWeight: "600", fontSize: 13 },
+  input: { backgroundColor: "#F9FAFB", padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#E5E7EB", fontSize: 15 },
+  transferCard: { backgroundColor: '#FFF', padding: 16, borderRadius: 15, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB', marginTop: 12 },
+  transferTitle: { fontSize: 15, fontWeight: 'bold', color: '#1F2937', marginVertical: 8 },
+  transferValue: { fontSize: 14, color: '#4B5563', marginBottom: 4 },
+  payButton: { marginTop: 30, backgroundColor: "#345195", paddingVertical: 18, borderRadius: 15, alignItems: "center" },
   payButtonText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
 });

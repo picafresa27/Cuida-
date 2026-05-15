@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react"; // Añadimos useState
+import React, { useState } from "react";
+import { FontAwesome, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import {
   Alert,
   ScrollView,
@@ -8,40 +9,94 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ToastAndroid, // Para mensajes rápidos en Android
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MetodosPagoScreen() {
   const router = useRouter();
 
-  // --- ESTADOS PARA LA LÓGICA ---
+  // --- ESTADOS ---
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false);
-  const [numeroTarjeta, setNumeroTarjeta] = useState("");
+  const [tarjetas, setTarjetas] = useState([
+    { id: '1', tipo: 'Visa', numero: '**** **** **** 4242', exp: '12/28' },
+    { id: '2', tipo: 'Mastercard', numero: '**** **** **** 8899', exp: '05/27' }
+  ]);
 
-  // 1. Lógica para acomodar cada 4 caracteres y limpiar letras
- const formatearTarjeta = (texto: string) => {
-  // Solo números
-  const soloNumeros = texto.replace(/\D/g, "");
-  // Ponemos espacios cada 4, pero solo si hay más de 4 números
-  const formateado = soloNumeros.replace(/(\d{4})(?=\d)/g, "$1 ");
-  setNumeroTarjeta(formateado.substring(0, 19)); 
-};
-  // 2. Lógica para validar la cantidad requerida (16)
+  // Estados del formulario
+  const [numeroTarjeta, setNumeroTarjeta] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [vencimiento, setVencimiento] = useState("");
+  const [cvv, setCvv] = useState("");
+
+  // --- LÓGICA DE ICONOS ---
+  const obtenerIconoTarjeta = (numero: string) => {
+    const limpio = numero.replace(/\D/g, "");
+    if (limpio.startsWith('4')) return <FontAwesome name="cc-visa" size={24} color="#1A1F71" />;
+    if (limpio.startsWith('5') || limpio.startsWith('2')) return <FontAwesome name="cc-mastercard" size={24} color="#EB001B" />;
+    if (limpio.startsWith('34') || limpio.startsWith('37')) return <FontAwesome name="cc-amex" size={24} color="#2E77BB" />;
+    return <Ionicons name="card-outline" size={24} color="#A0AEC0" />;
+  };
+
+  // --- MANEJO DE ELIMINACIÓN ---
+  const mostrarMensaje = (msg: string) => {
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(msg, ToastAndroid.SHORT);
+    } else {
+      Alert.alert("Aviso", msg);
+    }
+  };
+
+  const confirmarEliminacion = (id: string) => {
+    Alert.alert(
+      "Eliminar Tarjeta",
+      "¿Estás seguro de que deseas eliminar esta tarjeta?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Eliminar", 
+          style: "destructive", 
+          onPress: () => {
+            setTarjetas(prev => prev.filter(t => t.id !== id));
+            mostrarMensaje("Tarjeta eliminada correctamente");
+          } 
+        }
+      ]
+    );
+  };
+
+  // --- LÓGICA DE GUARDADO ---
+  const formatearTarjeta = (texto: string) => {
+    const soloNumeros = texto.replace(/\D/g, "");
+    const formateado = soloNumeros.replace(/(\d{4})(?=\d)/g, "$1 ");
+    setNumeroTarjeta(formateado.substring(0, 19));
+  };
+
+  const formatearVencimiento = (t: string) => {
+    const v = t.replace(/\D/g, "");
+    if (v.length <= 2) setVencimiento(v);
+    else setVencimiento(`${v.slice(0, 2)}/${v.slice(2, 4)}`);
+  };
+
   const guardarNuevaTarjeta = () => {
     const digitosReales = numeroTarjeta.replace(/\D/g, "");
-    
-    if (digitosReales.length !== 16) {
-      Alert.alert("Error", "La tarjeta debe tener exactamente 16 dígitos.");
+    if (!nombre || !vencimiento || !cvv || digitosReales.length !== 16) {
+      Alert.alert("Error", "Por favor, completa todos los campos correctamente.");
       return;
     }
 
-    Alert.alert("Éxito", "Tarjeta guardada correctamente", [
-      { text: "OK", onPress: () => {
-        setMostrandoFormulario(false);
-        setNumeroTarjeta("");
-        // Aquí podrías agregar la lógica para guardar en la base de datos después
-      }}
-    ]);
+    const nueva = {
+      id: Date.now().toString(),
+      tipo: numeroTarjeta.startsWith('4') ? 'Visa' : 'Mastercard',
+      numero: `**** **** **** ${digitosReales.slice(-4)}`,
+      exp: vencimiento
+    };
+
+    setTarjetas([...tarjetas, nueva]);
+    setMostrandoFormulario(false);
+    setNumeroTarjeta(""); setNombre(""); setVencimiento(""); setCvv("");
+    mostrarMensaje("Tarjeta agregada con éxito");
   };
 
   return (
@@ -55,71 +110,103 @@ export default function MetodosPagoScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        {/* Si NO estamos agregando, mostramos tu lista original */}
         {!mostrandoFormulario ? (
           <>
             <Text style={styles.instrucciones}>
               Administra tus tarjetas guardadas para agilizar el pago de tus consultas y anticipos.
             </Text>
 
-            <View style={styles.tarjeta}>
-              <View style={styles.tarjetaHeader}>
-                <Text style={styles.tipoTarjeta}>Visa</Text>
-                <TouchableOpacity><Text style={styles.textoEliminar}>Eliminar</Text></TouchableOpacity>
+            {tarjetas.length > 0 ? (
+              tarjetas.map((item) => (
+                <View key={item.id} style={styles.tarjeta}>
+                  <View style={styles.tarjetaHeader}>
+                    <View style={styles.row}>
+                      {obtenerIconoTarjeta(item.tipo === 'Visa' ? '4' : '5')}
+                      <Text style={[styles.tipoTarjeta, { marginLeft: 8 }]}>{item.tipo}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => confirmarEliminacion(item.id)}>
+                      <Text style={styles.textoEliminar}>Eliminar</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.numeroTarjeta}>{item.numero}</Text>
+                  <Text style={styles.expiracion}>Expira: {item.exp}</Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="card-outline" size={60} color="#CBD5E0" />
+                <Text style={styles.emptyText}>No hay tarjetas guardadas</Text>
               </View>
-              <Text style={styles.numeroTarjeta}>**** **** **** 4242</Text>
-              <Text style={styles.expiracion}>Expira: 12/28</Text>
-            </View>
+            )}
 
-            <View style={styles.tarjeta}>
-              <View style={styles.tarjetaHeader}>
-                <Text style={styles.tipoTarjeta}>Mastercard</Text>
-                <TouchableOpacity><Text style={styles.textoEliminar}>Eliminar</Text></TouchableOpacity>
-              </View>
-              <Text style={styles.numeroTarjeta}>**** **** **** 8899</Text>
-              <Text style={styles.expiracion}>Expira: 05/27</Text>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.botonAgregar}
-              onPress={() => setMostrandoFormulario(true)} // Cambia al formulario
-            >
+            <TouchableOpacity style={styles.botonAgregar} onPress={() => setMostrandoFormulario(true)}>
               <Text style={styles.textoAzul}>+ Agregar nueva tarjeta</Text>
             </TouchableOpacity>
           </>
         ) : (
-          /* NUEVO: FORMULARIO DE ENTRADA */
           <View style={styles.formCard}>
             <Text style={styles.formTitulo}>Nueva Tarjeta</Text>
-            
-            <Text style={styles.label}>Número de Tarjeta</Text>
+
+            <Text style={styles.label}>Nombre del Titular</Text>
             <TextInput
-              style={styles.input}
-              placeholder="0000 0000 0000 0000"
-              keyboardType="numeric"
-              value={numeroTarjeta}
-              onChangeText={formatearTarjeta}
+              style={styles.inputSimple}
+              placeholder="Ej: JUAN PÉREZ"
+              autoCapitalize="characters"
+              value={nombre}
+              onChangeText={setNombre}
             />
 
+            <Text style={styles.label}>Número de Tarjeta</Text>
+            <View style={styles.inputConIcono}>
+              <View style={styles.iconoInput}>
+                {obtenerIconoTarjeta(numeroTarjeta)}
+              </View>
+              <TextInput
+                style={styles.inputLimpio}
+                placeholder="0000 0000 0000 0000"
+                keyboardType="numeric"
+                value={numeroTarjeta}
+                onChangeText={formatearTarjeta}
+                maxLength={19}
+              />
+            </View>
+
             <View style={styles.row}>
-              <TouchableOpacity 
-                style={styles.btnSecundario} 
-                onPress={() => setMostrandoFormulario(false)}
-              >
+              <View style={{ flex: 1, marginRight: 10 }}>
+                <Text style={styles.label}>Vencimiento</Text>
+                <TextInput
+                  style={styles.inputSimple}
+                  placeholder="MM/AA"
+                  keyboardType="numeric"
+                  maxLength={5}
+                  value={vencimiento}
+                  onChangeText={formatearVencimiento}
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.label}>CVV</Text>
+                <TextInput
+                  style={styles.inputSimple}
+                  placeholder="123"
+                  keyboardType="numeric"
+                  maxLength={3}
+                  secureTextEntry
+                  value={cvv}
+                  onChangeText={setCvv}
+                />
+              </View>
+            </View>
+
+            <View style={[styles.row, { marginTop: 10 }]}>
+              <TouchableOpacity style={styles.btnSecundario} onPress={() => setMostrandoFormulario(false)}>
                 <Text style={styles.btnTxtNegro}>Cancelar</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.btnPrimario} 
-                onPress={guardarNuevaTarjeta}
-              >
+              <TouchableOpacity style={styles.btnPrimario} onPress={guardarNuevaTarjeta}>
                 <Text style={styles.btnTxtBlanco}>Guardar</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -152,18 +239,22 @@ const styles = StyleSheet.create({
     borderStyle: "dashed", marginTop: 10,
   },
   textoAzul: { color: "#345195", fontSize: 16, fontWeight: "700" },
-  
-  // ESTILOS DEL FORMULARIO
+  row: { flexDirection: "row", justifyContent: "space-between", alignItems: 'center' },
   formCard: { backgroundColor: "#FFF", padding: 20, borderRadius: 16, borderWidth: 1, borderColor: "#E2E8F0" },
   formTitulo: { fontSize: 18, fontWeight: "bold", marginBottom: 20, color: "#1A202C" },
   label: { fontSize: 12, color: "#718096", marginBottom: 8, fontWeight: "600" },
-  input: { 
-    backgroundColor: "#F7FAFC", borderWidth: 1, borderColor: "#E2E8F0", 
-    padding: 15, borderRadius: 10, fontSize: 18, marginBottom: 20, letterSpacing: 1 
-  },
-  row: { flexDirection: "row", justifyContent: "space-between" },
   btnPrimario: { backgroundColor: "#345195", padding: 15, borderRadius: 10, flex: 1, marginLeft: 10, alignItems: "center" },
   btnSecundario: { backgroundColor: "#EDF2F7", padding: 15, borderRadius: 10, flex: 1, marginRight: 10, alignItems: "center" },
   btnTxtBlanco: { color: "#FFF", fontWeight: "bold" },
   btnTxtNegro: { color: "#4A5568", fontWeight: "bold" },
+  inputSimple: {
+    backgroundColor: "#F7FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, padding: 15, fontSize: 16, color: "#2D3748", marginBottom: 20,
+  },
+  inputConIcono: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: "#F7FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 15, marginBottom: 20,
+  },
+  iconoInput: { marginRight: 10 },
+  inputLimpio: { flex: 1, height: 55, fontSize: 18, color: "#2D3748", letterSpacing: 1 },
+  emptyContainer: { alignItems: 'center', marginVertical: 40 },
+  emptyText: { color: '#A0AEC0', marginTop: 10, fontSize: 16 }
 });
