@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import API_URL from "../../config/api";
 import React, { useContext, useEffect, useState } from "react";
 import {
   Alert,
@@ -14,6 +13,7 @@ import {
   Text, TextInput, TouchableOpacity,
   View
 } from "react-native";
+import API_URL from "../../config/api";
 import { UserContext } from "../../context/userContext";
 
 export default function DatosPersonales() {
@@ -72,7 +72,7 @@ export default function DatosPersonales() {
     formData.append('upload_preset', 'cuida+');
 
     try {
-      const resCloudinary = await fetch('${API_URL}/upload', {
+      const resCloudinary = await fetch(`${API_URL}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -80,7 +80,7 @@ export default function DatosPersonales() {
       const data = await resCloudinary.json();
 
       if (data.secure_url) {
-        const resBackend = await fetch('${API_URL}/actualizarFotoPerfil', {
+        const resBackend = await fetch(`${API_URL}/actualizarFotoPerfil`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -102,6 +102,7 @@ export default function DatosPersonales() {
   const guardarCambiosTexto = async () => {
     try {
       const u = usuario as any;
+      const userId = u.id || u.IdPaciente;
       const URL = `${API_URL}/actualizar-perfil/${u.id || u.IdPaciente}`;
       
       const res = await fetch(URL, {
@@ -111,13 +112,21 @@ export default function DatosPersonales() {
       });
 
       if (res.ok) {
-        setUsuario({ ...usuario, nombres: nombre, apellidos, telefono, correo, password } as any);
+        setUsuario({ 
+          ...usuario, 
+          nombres: nombre, 
+          apellidos, 
+          telefono, 
+          correo, 
+          password 
+        } as any);
         setEditando(false);
         Alert.alert("Éxito", "Datos actualizados.");
       } else {
         Alert.alert("Error", "No se pudieron guardar los cambios.");
       }
     } catch (error) {
+      console.log("Error al actualizar:", error);
       Alert.alert("Error", "Problema de conexión.");
     }
   };
