@@ -5,7 +5,7 @@
     "scheme": "cuidaplus",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "../app/img/logo_cuida+.png",
+    "icon": "./app/img/logo_cuida+.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
