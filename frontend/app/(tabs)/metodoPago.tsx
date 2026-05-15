@@ -10,10 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-<<<<<<< HEAD
 import API_URL from "../../config/api";
-=======
->>>>>>> dd5d559f9ee721f6ade702ac0e6850ed9395de8a
 
 export default function MetodoPago() {
   const router = useRouter();

@@ -1,6 +1,7 @@
 import { Link, useRouter } from "expo-router";
 import API_URL from "../config/api";
 import { useContext, useState } from "react";
+import { Ionicons } from '@expo/vector-icons';
 import {
   Alert,
   Image,
@@ -19,72 +20,73 @@ import { UserContext } from "../context/userContext";
 export default function LoginScreen() {
   const router = useRouter();
   const { setUsuario } = useContext(UserContext);
-  
+
   // Estados para guardar lo que el usuario escribe
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [verPassword, setVerPassword] = useState(true);
 
   const handleLogin = async () => {
-  if (!email || !password) {
-    Alert.alert("Error", "Completa todos los campos");
-    return;
-  }
-
-  try {
-    const res = await fetch(
-  `${API_URL}/login`,
-  {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      correo: email,
-      password: password,
-    }),
-  }
-);
-    const text = await res.text();
-    const data = text ? JSON.parse(text) : {};
-
-    if (!res.ok) {
-      Alert.alert("Error", data.error || "No se pudo iniciar sesión");
+    if (!email || !password) {
+      Alert.alert("Error", "Completa todos los campos");
       return;
     }
 
-    Alert.alert("Éxito", "Inicio de sesión exitoso");
+    try {
+      const res = await fetch(
+        `${API_URL}/login`,
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            correo: email,
+            password: password,
+          }),
+        }
+      );
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
 
-    /*router.replace({
-      pathname: "/(tabs)",
-      params: {
-        nombre: data.usuario.nombres,
-      },
-    });*/
+      if (!res.ok) {
+        Alert.alert("Error", data.error || "No se pudo iniciar sesión");
+        return;
+      }
 
-    // Guardar usuario globalmente
-    setUsuario(data.usuario);
+      Alert.alert("Éxito", "Inicio de sesión exitoso");
 
-    const correoUsuario = email.toLowerCase();
+      /*router.replace({
+        pathname: "/(tabs)",
+        params: {
+          nombre: data.usuario.nombres,
+        },
+      });*/
 
-    if (correoUsuario.endsWith("@cuidaplus.com")) {
-      // Si el correo termina en @cuida+.com, va a la interfaz de doctor
-      // Asegúrate de tener creada la carpeta app/(doctor)
-      router.replace("../interfacesDoctor/inicioDoctor"); 
-    } else {
-      // Si es un correo normal, va a la interfaz de paciente (tabs)
-      router.replace("/(tabs)");
+      // Guardar usuario globalmente
+      setUsuario(data.usuario);
+
+      const correoUsuario = email.toLowerCase();
+
+      if (correoUsuario.endsWith("@cuidaplus.com")) {
+        // Si el correo termina en @cuida+.com, va a la interfaz de doctor
+        // Asegúrate de tener creada la carpeta app/(doctor)
+        router.replace("../interfacesDoctor/inicioDoctor");
+      } else {
+        // Si es un correo normal, va a la interfaz de paciente (tabs)
+        router.replace("/(tabs)");
+      }
+
+    } catch (error) {
+      console.log("Error login:", error);
+
+      Alert.alert(
+        "Error",
+        "No se pudo conectar al servidor"
+      );
     }
-
-  } catch (error) {
-    console.log("Error login:", error);
-
-    Alert.alert(
-      "Error",
-      "No se pudo conectar al servidor"
-    );
-  }
-};
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -127,14 +129,26 @@ export default function LoginScreen() {
             {/* Input Contraseña */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Contraseña</Text>
-              <TextInput
-                style={styles.input}
-                placeholder=".........."
-                placeholderTextColor="#A0AEC0"
-                secureTextEntry={true} // Oculta el texto con bolitas
-                value={password}
-                onChangeText={setPassword}
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.inputFlex} // Nuevo estilo para que no choque con el ojo
+                  placeholder=".........."
+                  placeholderTextColor="#A0AEC0"
+                  secureTextEntry={verPassword} // Ahora depende del estado
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setVerPassword(!verPassword)}
+                >
+                  <Ionicons
+                    name={verPassword ? "eye-off-outline" : "eye-outline"}
+                    size={22}
+                    color="#718096"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Botones */}
@@ -258,5 +272,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     textDecorationLine: "underline",
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+  },
+  inputFlex: {
+    flex: 1, // Esto hace que el texto ocupe todo el espacio y empuje al ojo a la derecha
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    color: "#2D3748",
+  },
+  eyeIcon: {
+    paddingHorizontal: 15,
   },
 });
