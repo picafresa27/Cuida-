@@ -1,7 +1,6 @@
-import { Link, useRouter } from "expo-router";
-import API_URL from "../config/api";
-import { useContext, useState } from "react";
 import { Ionicons } from '@expo/vector-icons';
+import { Link, useRouter } from "expo-router";
+import { useContext, useState } from "react";
 import {
   Alert,
   Image,
@@ -15,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import API_URL from "../config/api";
 import { UserContext } from "../context/userContext";
 
 export default function LoginScreen() {
@@ -54,6 +54,10 @@ export default function LoginScreen() {
         Alert.alert("Error", data.error || "No se pudo iniciar sesión");
         return;
       }
+
+      console.log("Datos recibidos del backend:", data.usuario);
+
+      console.log("Guardando ID en el contexto:", data.usuario.id);
 
       Alert.alert("Éxito", "Inicio de sesión exitoso");
 

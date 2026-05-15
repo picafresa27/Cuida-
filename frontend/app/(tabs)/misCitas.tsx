@@ -1,6 +1,5 @@
 import { useFocusEffect, useRouter } from "expo-router";
-import API_URL from "../../config/api";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useContext, useState } from "react";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -10,8 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import API_URL from "../../config/api";
+import { UserContext } from "../../context/userContext";
 
 export default function misCitas() {
+  const { usuario } = useContext(UserContext); 
   const [filtro, setFiltro] = useState("Próximas");
   const [citas, setCitas] = useState([]); 
   const [cargando, setCargando] = useState(true);
@@ -26,19 +28,18 @@ export default function misCitas() {
 
     try {
       // 1. Extraemos los números de la fecha (2026-05-10)
-      // Usamos split para limpiar cualquier letra 'T' o espacios
       const soloFecha = fRaw.split('T')[0];
       const [anio, mes, dia] = soloFecha.split('-').map(Number);
 
       // 2. Extraemos los números de la hora (16:00:00)
       const [horas, minutos] = hRaw.split(':').map(Number);
 
-      // 3. Creamos el objeto de fecha manualmente (Mes es 0-11, por eso mes - 1)
+      // 3. Creamos el objeto de fecha manualmente
       const fechaObj = new Date(anio, mes - 1, dia, horas, minutos);
 
       if (isNaN(fechaObj.getTime())) return "Formato inválido";
 
-      // 4. Mapeo de meses manual (Para evitar problemas de idioma en el celular)
+      // 4. Mapeo de meses manual
       const meses = [
         "Ene", "Feb", "Mar", "Abr", "May", "Jun",
         "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
@@ -52,10 +53,9 @@ export default function misCitas() {
       const m = fechaObj.getMinutes().toString().padStart(2, '0');
       const ampm = h >= 12 ? 'PM' : 'AM';
       h = h % 12;
-      h = h ? h : 12; // Si es 0, poner 12
+      h = h ? h : 12; 
       const horaFinal = `${h}:${m} ${ampm}`;
 
-      // Resultado idéntico a tu imagen: "10 May · 04:00 PM"
       return `${nDia} ${nombreMes} · ${horaFinal}`;
 
     } catch (e) {
@@ -66,11 +66,12 @@ export default function misCitas() {
 
   // --- TRAER DATOS REALES ---
   const obtenerCitas = async () => {
+    // Evitamos que intente buscar si el ID aún no está listo
+    if (!usuario?.id) return; 
+
     try {
-      const response = await fetch(
-        `${API_URL}/mis-citas/1`
-      );
-      const data = await response.json();
+      const res = await fetch(`${API_URL}/mis-citas/${usuario.id}`);
+      const data = await res.json(); 
       setCitas(data);
     } catch (error) {
       console.error("Error al obtener citas:", error);
@@ -82,23 +83,22 @@ export default function misCitas() {
   useFocusEffect(
     useCallback(() => {
       obtenerCitas();
-    }, [])
+    }, [usuario?.id])
   );
 
   // --- LÓGICA DE FILTRADO ---
-const citasFiltradas = citas.filter((cita: any) => {
-  if (filtro === "Próximas") {
-    // Ajusta "Pendiente" según como lo devuelva tu SQL (ej: "Agendada")
-    return cita.Estado === "Pendiente"; 
-  }
-  if (filtro === "Pasadas") {
-    return cita.Estado === "Completada" || cita.Estado === "Finalizada";
-  }
-  if (filtro === "Canceladas") {
-    return cita.Estado === "Cancelada";
-  }
-  return true;
-});
+  const citasFiltradas = citas.filter((cita: any) => {
+    if (filtro === "Próximas") {
+      return cita.Estado === "Pendiente" || cita.Estado === "Agendada"; 
+    }
+    if (filtro === "Pasadas") {
+      return cita.Estado === "Completada" || cita.Estado === "Finalizada";
+    }
+    if (filtro === "Canceladas") {
+      return cita.Estado === "Cancelada";
+    }
+    return true;
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -135,7 +135,10 @@ const citasFiltradas = citas.filter((cita: any) => {
         {cargando ? (
           <ActivityIndicator size="large" color="#345195" style={{ marginTop: 20 }} />
         ) : citas.length === 0 ? (
-          <Text style={styles.vacioText}>No hay citas registradas en la base de datos.</Text>
+          <Text style={styles.vacioText}>Aun no hay citas registradas.</Text>
+        ) : citasFiltradas.length === 0 ? (
+          // 👇 Agregué este mensaje por si el paciente no tiene citas en ese filtro específico
+          <Text style={styles.vacioText}>No tienes citas en la sección de {filtro}.</Text> 
         ) : (
           citasFiltradas.map((cita: any) => {
           const fechaFormateada = formatearCita(cita); 

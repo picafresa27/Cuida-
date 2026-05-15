@@ -66,7 +66,7 @@ app.post("/registro", async (req, res) => {
 
         const correoLimpio = correo.trim().toLowerCase();
 
-        // 🔍 VERIFICAR SI EL CORREO YA EXISTE
+        // VERIFICAR SI EL CORREO YA EXISTE
         const usuarioExistente = await pool.request()
             .input('correo', sql.VarChar(100), correoLimpio)
             .query(`
@@ -82,7 +82,7 @@ app.post("/registro", async (req, res) => {
             });
         }
 
-        // ✅ INSERTAR NUEVO USUARIO
+        // INSERTAR NUEVO USUARIO
         await pool.request()
             .input('nombres', sql.VarChar(50), nombre)
             .input('apellidos', sql.VarChar(50), apellidos)
@@ -173,7 +173,7 @@ app.post("/login", async (req, res) => {
 
         if (result.recordset.length > 0) {
             const usuario = result.recordset[0];
-            console.log(`🔑 Login exitoso: ${usuario.Nombres} (ID: ${usuario.IdPaciente})`);
+            console.log(`Login exitoso: ${usuario.Nombres} (ID: ${usuario.IdPaciente})`);
             
             res.json({ 
                 mensaje: "Inicio de sesión exitoso", 
@@ -186,7 +186,7 @@ app.post("/login", async (req, res) => {
                 }
             });
         } else {
-            console.log(`❌ Intento de login fallido para: ${correo}`);
+            console.log(`Intento de login fallido para: ${correo}`);
             res.status(401).json({ error: "Correo o contraseña incorrectos." });
         }
     } catch (err) {
@@ -255,7 +255,7 @@ app.post("/agendarCita", async (req, res) => {
             `);
 
         const nuevoIdCita = result.recordset[0].IdCita;
-        console.log(`✅ Cita agendada con éxito. ID: ${nuevoIdCita}`);
+        console.log(`Cita agendada con éxito. ID: ${nuevoIdCita}`);
 
         res.status(201).json({ 
             mensaje: "Cita creada correctamente", 
@@ -264,7 +264,7 @@ app.post("/agendarCita", async (req, res) => {
 
     } catch (err) {
         // Esto te ayudará a ver cualquier otro error de columna en la terminal
-        console.error("❌ Error en SQL:", err.message);
+        console.error("Error en SQL:", err.message);
         res.status(500).json({ error: err.message });
     }
 });
@@ -328,7 +328,7 @@ io.on("connection", (socket) => {
     console.log("⚡ Un celular se acaba de conectar a Cuida+ con ID:", socket.id);
 
     socket.on("disconnect", () => {
-        console.log("❌ Un celular se desconectó");
+        console.log("Un celular se desconectó");
     });
 });
 
@@ -365,5 +365,38 @@ app.put("/actualizar-perfil/:id", async (req, res) => {
     } catch (err) {
         console.error("Error al actualizar:", err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+app.get("/proxima-cita/:idPaciente", async (req, res) => {
+    const { idPaciente } = req.params;
+
+    try {
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request()
+            .input("idPaciente", sql.Int, idPaciente)
+            .query(`
+                SELECT TOP 1 
+                    c.IdCita, 
+                    c.Fecha, 
+                    c.Hora, 
+                    d.Nombres AS NombreMedico, 
+                    d.Apellidos AS ApellidoMedico,
+                    d.Especialidad 
+                FROM CitaMedica c
+                INNER JOIN Doctor d ON c.IdDoctor = d.IdDoctor
+                WHERE c.IdPaciente = @idPaciente 
+                AND CAST(c.Fecha AS DATE) >= CAST(GETDATE() AS DATE)
+                ORDER BY c.Fecha ASC, c.Hora ASC
+            `);
+
+        if (result.recordset.length > 0) {
+            res.json(result.recordset[0]);
+        } else {
+            res.json(null); // Si la cita más cercana ya pasó, enviamos null
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error al buscar la próxima cita" });
     }
 });
