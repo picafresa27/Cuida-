@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from "expo-router";
-import React, { useContext, useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router"; // 1. Agregamos useFocusEffect
+import React, { useCallback, useContext, useEffect, useState } from "react"; // 2. Agregamos useCallback
 import {
   ActivityIndicator,
   Pressable,
@@ -32,14 +32,11 @@ export default function HomePaciente() {
   const formatearFechaInicio = (fechaIso: string, horaIso: string) => {
     if (!fechaIso || !horaIso) return "";
     try {
-      // Sacar el día y el mes
       const soloFecha = fechaIso.split('T')[0];
       const [anio, mes, dia] = soloFecha.split('-').map(Number);
       
-      // Limpiar la hora de ese "1970-01-01T..."
       let horaLimpia = horaIso.includes('T') ? horaIso.split('T')[1].substring(0, 5) : horaIso.substring(0, 5);
       
-      // Convertir a AM/PM
       const [hStr, mStr] = horaLimpia.split(':');
       let h = parseInt(hStr, 10);
       const ampm = h >= 12 ? 'PM' : 'AM';
@@ -54,6 +51,32 @@ export default function HomePaciente() {
     }
   };
 
+  // --- FUNCIÓN DE CARGA (Ahora está fuera, al nivel del componente) ---
+  const obtenerProximaCita = async () => {
+    if (!usuario?.id) return;
+    try {
+      const res = await fetch(`${API_URL}/proxima-cita/${usuario.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProximaCita(data);
+      } else {
+        setProximaCita(null);
+      }
+    } catch (error) {
+      console.log("Error trayendo la cita:", error);
+      setProximaCita(null);
+    } finally {
+      setCargandoCita(false);
+    }
+  };
+
+  // --- LA MAGIA PARA ACTUALIZAR AL ENTRAR A LA PANTALLA ---
+  useFocusEffect(
+    useCallback(() => {
+      obtenerProximaCita();
+    }, [usuario?.id])
+  );
+
   // Efecto para el Socket (Tu lógica original)
   useEffect(() => {
     socket.on("connect", () => {
@@ -64,33 +87,6 @@ export default function HomePaciente() {
       socket.disconnect();
     };
   }, []);
-
-  // Efecto para traer la próxima cita desde Azure
-  useEffect(() => {
-    if (!usuario?.id) {
-        setCargandoCita(false);
-        return;
-    }
-
-    const obtenerProximaCita = async () => {
-      try {
-        const res = await fetch(`${API_URL}/proxima-cita/${usuario.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setProximaCita(data);
-        } else {
-          setProximaCita(null);
-        }
-      } catch (error) {
-        console.log("Error trayendo la cita:", error);
-        setProximaCita(null);
-      } finally {
-        setCargandoCita(false);
-      }
-    };
-
-    obtenerProximaCita();
-  }, [usuario]);
 
   return (
     <SafeAreaView style={styles.container}>

@@ -88,15 +88,28 @@ export default function misCitas() {
 
   // --- LÓGICA DE FILTRADO ---
   const citasFiltradas = citas.filter((cita: any) => {
+    const estadoLimpio = cita.Estado ? cita.Estado.toLowerCase() : "";
     if (filtro === "Próximas") {
-      return cita.Estado === "Pendiente" || cita.Estado === "Agendada"; 
+      // Agregamos "confirmada" a la lista de estados válidos para esta pestaña
+      return (
+        estadoLimpio === "pendiente" || 
+        estadoLimpio === "agendada" || 
+        estadoLimpio === "confirmada"
+      ); 
     }
+    
     if (filtro === "Pasadas") {
-      return cita.Estado === "Completada" || cita.Estado === "Finalizada";
+      return (
+        estadoLimpio === "completada" || 
+        estadoLimpio === "finalizada" || 
+        estadoLimpio === "terminada"
+      );
     }
+    
     if (filtro === "Canceladas") {
-      return cita.Estado === "Cancelada";
+      return estadoLimpio === "cancelada";
     }
+    
     return true;
   });
 

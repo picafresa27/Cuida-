@@ -1,6 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
-import API_URL from "../../config/api";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   Alert,
   SafeAreaView,
@@ -10,12 +9,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { io } from "socket.io-client";
+import API_URL from "../../config/api";
+import { UserContext } from "../../context/userContext";
+
+// 1. Conexión del Socket (Asegúrate de que el puerto sea el correcto)
+const socket = io(`${API_URL}/inicioPaciente`);
 
 export default function AgendarCita() {
+  const { usuario } = useContext(UserContext);
   const router = useRouter();
   const { idDoctor, nombre, apellidos, especialidad } = useLocalSearchParams();
 
-  // --- OBTENEMOS EL "AHORA" REAL ---
+  // --- CONFIGURACIÓN DE FECHA ---
   const ahora = new Date();
   const diaActual = ahora.getDate();
   const mesActualIndex = ahora.getMonth();
@@ -31,26 +37,62 @@ export default function AgendarCita() {
   // --- ESTADOS ---
   const [selectedDay, setSelectedDay] = useState(diaActual);
   const [selectedTime, setSelectedTime] = useState("");
+  const [horasOcupadas, setHorasOcupadas] = useState<string[]>([]);
 
   const horarios = ["09:00", "10:30", "12:00", "16:00", "17:30", "19:00"];
 
-  // --- LÓGICA DE BLOQUEO BLINDADA ---
+  const consultarDisponibilidad = useCallback(async () => {
+    if (!idDoctor) return;
+
+    try {
+      const mesF = (mesActualIndex + 1).toString().padStart(2, '0');
+      const diaF = selectedDay.toString().padStart(2, '0');
+      const fechaDB = `${anioActual}-${mesF}-${diaF}`;
+      const doctorIdLimpio = Array.isArray(idDoctor) ? idDoctor[0] : idDoctor;
+
+      const res = await fetch(`${API_URL}/horarios-ocupados/${doctorIdLimpio}/${fechaDB}`);
+      if (!res.ok) throw new Error("Error en la respuesta");
+      
+      const data = await res.json();
+      setHorasOcupadas(data); 
+    } catch (error) {
+      console.error("Error cargando disponibilidad:", error);
+    }
+  }, [selectedDay, idDoctor, anioActual, mesActualIndex]);
+
+  useEffect(() => {
+    consultarDisponibilidad();
+  }, [consultarDisponibilidad]);
+
+  useEffect(() => {
+    socket.on('cita-actualizada', () => {
+      console.log("Actualizando disponibilidad por cambio en otro dispositivo...");
+      consultarDisponibilidad();
+    });
+
+    return () => {
+      socket.off('cita-actualizada');
+    };
+  }, [consultarDisponibilidad]);
+
   const verificarSiYaPaso = (timeStr: string) => {
     const [h, m] = timeStr.split(':').map(Number);
-    // Creamos la fecha completa del slot que estamos dibujando
     const fechaSlot = new Date(anioActual, mesActualIndex, selectedDay, h, m);
-    
-    // Si la fecha del slot es menor a la fecha de este preciso segundo, está bloqueada
     return fechaSlot < ahora;
   };
 
-  // Selecciona automáticamente la primera hora disponible al cambiar de día
+  // Seleccionar automáticamente la primera hora libre
   useEffect(() => {
-    const primeraDisponible = horarios.find(h => !verificarSiYaPaso(h));
+    const primeraDisponible = horarios.find(h => !verificarSiYaPaso(h) && !horasOcupadas.includes(h));
     setSelectedTime(primeraDisponible || "");
-  }, [selectedDay]);
+  }, [selectedDay, horasOcupadas]);
 
   const handleAgendar = async () => {
+    if (!usuario?.id) {
+      Alert.alert("Error", "No pudimos identificar tu sesión.");
+      return;
+    }
+
     if (!selectedTime) {
       Alert.alert("Atención", "Selecciona un horario disponible.");
       return;
@@ -67,14 +109,24 @@ export default function AgendarCita() {
         body: JSON.stringify({
           fecha: fechaDB,
           hora: `${selectedTime}:00`,
-          idPaciente: 1, 
+          idPaciente: usuario?.id, 
           idDoctor: Number(idDoctor),
           numeroConsultorio: "4", 
           anticipo: true,
         }),
       });
 
+      // Si el servidor detecta que alguien más ganó el lugar
+      if (response.status === 409) {
+        Alert.alert("Ocupado", "Este horario se acaba de ocupar. Por favor elige otro.");
+        consultarDisponibilidad(); // Refrescar visualmente
+        return;
+      }
+
       if (response.ok) {
+        // Emitir evento para que otros sepan que agendamos
+        socket.emit('nueva-cita'); 
+        
         const data = await response.json();
         router.push({
           pathname: "/metodoPago",
@@ -84,8 +136,6 @@ export default function AgendarCita() {
             montoTotal: 800 
           }
         });
-      } else {
-        Alert.alert("Error", "Este horario ya fue ocupado.");
       }
     } catch (error) {
       Alert.alert("Error", "No se pudo conectar con el servidor.");
@@ -96,21 +146,19 @@ export default function AgendarCita() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
-        {/* CABECERA (Cuida+) */}
+        {/* CABECERA */}
         <View style={styles.header}>
           <Text style={styles.brand}>Cuida+</Text>
           <Text style={styles.title}>Agendar cita</Text>
           <Text style={styles.subtitle}>
-            Elige la fecha en el calendario y selecciona un horario disponible.
+            Elige la fecha y selecciona un horario disponible.
           </Text>
         </View>
 
-        {/* INFO DOCTOR (Especialidad, Zona Norte, Consultorio 4) */}
+        {/* INFO DOCTOR */}
         <View style={styles.doctorCard}>
           <Text style={styles.doctorName}>Dr. {nombre} {apellidos}</Text>
-          <Text style={styles.doctorInfo}>
-            {especialidad} · Zona Norte · Consultorio 4
-          </Text>
+          <Text style={styles.doctorInfo}>{especialidad} · Zona Norte · Consultorio 4</Text>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>Anticipo 50%</Text>
           </View>
@@ -136,21 +184,22 @@ export default function AgendarCita() {
                   ]}
                   onPress={() => setSelectedDay(day)}
                 >
-                  <Text style={[styles.dayText, selectedDay === day && styles.dayTextSelected]}>
-                    {day}
-                  </Text>
+                  <Text style={[styles.dayText, selectedDay === day && styles.dayTextSelected]}>{day}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {/* HORARIOS (Aquí se aplica el bloqueo real) */}
+        {/* HORARIOS */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Horarios disponibles</Text>
           <View style={styles.timeGrid}>
             {horarios.map((time) => {
-              const inhabilitado = verificarSiYaPaso(time);
+              const yaOcupado = horasOcupadas.includes(time);
+              const pasoDeHora = verificarSiYaPaso(time);
+              const inhabilitado = yaOcupado || pasoDeHora;
+
               return (
                 <TouchableOpacity
                   key={time}
@@ -158,32 +207,33 @@ export default function AgendarCita() {
                   style={[
                     styles.timeButton,
                     selectedTime === time && styles.timeSelected,
-                    inhabilitado && { backgroundColor: "#F7FAFC", borderColor: "#EDF2F7" }
+                    inhabilitado && { backgroundColor: "#F1F5F9", borderColor: "#E2E8F0" }
                   ]}
                   onPress={() => setSelectedTime(time)}
                 >
-                  <Text style={[
-                    styles.timeText,
-                    selectedTime === time && styles.timeTextSelected,
-                    inhabilitado && { color: "#CBD5E0", textDecorationLine: 'line-through' }
-                  ]}>
-                    {time}
-                  </Text>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={[
+                      styles.timeText,
+                      selectedTime === time && styles.timeTextSelected,
+                      inhabilitado && { color: "#CBD5E0", textDecorationLine: pasoDeHora ? 'line-through' : 'none' }
+                    ]}>
+                      {time}
+                    </Text>
+                    {yaOcupado && <Text style={{ fontSize: 9, color: '#A0AEC0', fontWeight: 'bold' }}>Ocupado</Text>}
+                  </View>
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {/* RESUMEN (Costo $800 / Anticipo $400) */}
+        {/* RESUMEN */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Resumen</Text>
           <Text style={styles.resumenMain}>
             Día {selectedDay} de {nombresMeses[mesActualIndex]} · {selectedTime || "---"}
           </Text>
-          <Text style={styles.resumenDetail}>
-            Consulta: $800 · Anticipo requerido: $400
-          </Text>
+          <Text style={styles.resumenDetail}>Consulta: $800 · Anticipo requerido: $400</Text>
         </View>
 
         <TouchableOpacity style={styles.mainButton} onPress={handleAgendar}>

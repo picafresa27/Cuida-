@@ -100,15 +100,22 @@ export default function DatosPersonales() {
   };
 
   const guardarCambiosTexto = async () => {
+    const u = usuario as any;
+    
+    // Si el campo password está vacío, usamos el que ya está en el contexto global
+    const passwordFinal = password.trim() === "" ? (u.password || u.Password) : password;
+
     try {
-      const u = usuario as any;
-      const userId = u.id || u.IdPaciente;
-      const URL = `${API_URL}/actualizar-perfil/${u.id || u.IdPaciente}`;
-      
-      const res = await fetch(URL, {
+      const res = await fetch(`${API_URL}/actualizar-perfil/${u.id || u.IdPaciente}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, apellidos, telefono, correo, password }),
+        body: JSON.stringify({ 
+          nombre, 
+          apellidos, 
+          telefono, 
+          correo, 
+          password: passwordFinal // Aquí mandamos la contraseña protegida
+        }),
       });
 
       if (res.ok) {
@@ -118,16 +125,13 @@ export default function DatosPersonales() {
           apellidos, 
           telefono, 
           correo, 
-          password 
+          password: passwordFinal 
         } as any);
         setEditando(false);
         Alert.alert("Éxito", "Datos actualizados.");
-      } else {
-        Alert.alert("Error", "No se pudieron guardar los cambios.");
       }
     } catch (error) {
-      console.log("Error al actualizar:", error);
-      Alert.alert("Error", "Problema de conexión.");
+      Alert.alert("Error", "Error de conexión.");
     }
   };
 

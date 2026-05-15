@@ -148,9 +148,7 @@ app.get("/doctores", async (req, res) => {
     }
 });
 
-// ==========================================
 // RUTA PARA EL LOGIN DEL PACIENTE (NUEVO)
-// ==========================================
 app.post("/login", async (req, res) => {
     const { correo, password } = req.body;
 
@@ -194,9 +192,8 @@ app.post("/login", async (req, res) => {
         res.status(500).json({ error: "Error en el servidor al intentar iniciar sesión." });
     }
 });
-// ==========================================
+
 // RUTA PARA LA FOTO DE PERFIL DEL PACIENTE (NUEVO)
-// ==========================================
 app.post("/actualizarFotoPerfil", async (req, res) => {
     console.log(req.body);
   const { idPaciente, fotoPerfil } = req.body;
@@ -239,6 +236,44 @@ app.post("/agendarCita", async (req, res) => {
 
     try {
         const pool = await sql.connect(dbConfig);
+
+        const checkPaciente = await pool.request()
+            .input("fecha", sql.VarChar, fecha)
+            .input("hora", sql.VarChar, hora)
+            .input("idPaciente", sql.Int, idPaciente)
+            .query(`
+                SELECT COUNT(*) as total 
+                FROM CitaMedica 
+                WHERE Fecha = @fecha 
+                  AND Hora = @hora 
+                  AND IdPaciente = @idPaciente 
+                  AND Estado != 'Cancelada'
+            `);
+
+        if (checkPaciente.recordset[0].total > 0) {
+            return res.status(409).json({ 
+                error: "Ya tienes otra cita agendada exactamente a esta misma hora." 
+            });
+        }
+
+        const checkDoctor = await pool.request()
+            .input("fecha", sql.VarChar, fecha)
+            .input("hora", sql.VarChar, hora)
+            .input("idDoctor", sql.Int, idDoctor)
+            .query(`
+                SELECT COUNT(*) as total 
+                FROM CitaMedica 
+                WHERE Fecha = @fecha 
+                  AND Hora = @hora 
+                  AND IdDoctor = @idDoctor 
+                  AND Estado != 'Cancelada'
+            `);
+
+        if (checkDoctor.recordset[0].total > 0) {
+            return res.status(409).json({ 
+                error: "El doctor se acaba de ocupar en este horario. Por favor elige otro." 
+            });
+        }
         
         const result = await pool.request()
             .input("fecha", sql.VarChar, fecha) 
@@ -247,7 +282,7 @@ app.post("/agendarCita", async (req, res) => {
             .input("idDoctor", sql.Int, idDoctor)
             .input("numConsultorio", sql.VarChar(10), numeroConsultorio)
             .input("anticipo", sql.Bit, anticipo ? 1 : 0)
-            .input("estado", sql.VarChar(20), 'Pendiente') // 👈 Agregamos el estado inicial
+            .input("estado", sql.VarChar(20), 'Pendiente') 
             .query(`
                 INSERT INTO CitaMedica (Fecha, Hora, IdPaciente, IdDoctor, NumeroConsultorio, Anticipo, Estado)
                 OUTPUT INSERTED.IdCita
@@ -257,6 +292,10 @@ app.post("/agendarCita", async (req, res) => {
         const nuevoIdCita = result.recordset[0].IdCita;
         console.log(`Cita agendada con éxito. ID: ${nuevoIdCita}`);
 
+        if (io) {
+            io.emit('cita-actualizada'); 
+        }
+
         res.status(201).json({ 
             mensaje: "Cita creada correctamente", 
             idCita: nuevoIdCita 
@@ -265,6 +304,37 @@ app.post("/agendarCita", async (req, res) => {
     } catch (err) {
         // Esto te ayudará a ver cualquier otro error de columna en la terminal
         console.error("Error en SQL:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// RUTA PARA OBTENER HORARIOS OCUPADOS DE UN DOCTOR EN UNA FECHA
+app.get("/horarios-ocupados/:idDoctor/:fecha", async (req, res) => {
+    const { idDoctor, fecha } = req.params;
+
+    try {
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request()
+            .input("idDoctor", sql.Int, idDoctor)
+            .input("fecha", sql.VarChar, fecha)
+            .query(`
+                SELECT Hora 
+                FROM CitaMedica 
+                WHERE IdDoctor = @idDoctor 
+                  AND Fecha = @fecha 
+                  AND Estado != 'Cancelada'
+            `);
+
+        // Convertimos el formato de SQL a un array simple: ["09:00", "10:30"]
+        const ocupados = result.recordset.map(row => {
+            // SQL suele devolver la hora con segundos (10:30:00), limpiamos a HH:mm
+            const h = row.Hora;
+            return typeof h === 'string' ? h.substring(0, 5) : h.toISOString().substring(11, 16);
+        });
+
+        res.json(ocupados);
+    } catch (err) {
+        console.error("Error al obtener ocupados:", err.message);
         res.status(500).json({ error: err.message });
     }
 });
@@ -288,7 +358,7 @@ app.get("/mis-citas/:idPaciente", async (req, res) => {
                     D.Apellidos AS apellidosDoctor, 
                     D.Especialidad
                 FROM CitaMedica C
-                INNER JOIN Doctor D ON C.IdDoctor = D.IdDoctor
+                LEFT JOIN Doctor D ON C.IdDoctor = D.IdDoctor
                 WHERE C.IdPaciente = @idPaciente
             `)
 
@@ -325,10 +395,16 @@ app.post("/pagos", async (req, res) => {
 
 // 3. LÓGICA DE EVENTOS DE SOCKET.IO
 io.on("connection", (socket) => {
-    console.log("⚡ Un celular se acaba de conectar a Cuida+ con ID:", socket.id);
+    console.log("Un usuario se ha conectado al socket:", socket.id);
+
+    socket.on('nueva-cita', () => {
+        console.log("Alguien agendó. Avisando a todos los demás dispositivos...");
+        // broadcast.emit le envía el mensaje a TODOS menos al que lo mandó
+        socket.broadcast.emit('cita-actualizada'); 
+    });
 
     socket.on("disconnect", () => {
-        console.log("Un celular se desconectó");
+        console.log("Usuario desconectado");
     });
 });
 
@@ -357,7 +433,7 @@ app.put("/actualizar-perfil/:id", async (req, res) => {
                     Apellidos = @apellidos, 
                     Telefono = @telefono,
                     Correo = @correo,
-                    Password = @password
+                    Password = ISNULL(NULLIF(@password, ''), Password)
                 WHERE IdPaciente = @id
             `);
 
@@ -384,7 +460,7 @@ app.get("/proxima-cita/:idPaciente", async (req, res) => {
                     d.Apellidos AS ApellidoMedico,
                     d.Especialidad 
                 FROM CitaMedica c
-                INNER JOIN Doctor d ON c.IdDoctor = d.IdDoctor
+                LEFT JOIN Doctor d ON c.IdDoctor = d.IdDoctor
                 WHERE c.IdPaciente = @idPaciente 
                 AND CAST(c.Fecha AS DATE) >= CAST(GETDATE() AS DATE)
                 ORDER BY c.Fecha ASC, c.Hora ASC
