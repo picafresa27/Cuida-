@@ -6,12 +6,12 @@ import {
   ScrollView, 
   TouchableOpacity, 
   Modal, 
-  TextInput 
+  TextInput,
+  Alert 
 } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons'; 
 
-// Configuración del idioma del calendario a Español
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
   monthNamesShort: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
@@ -20,37 +20,52 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
-export default function Agenda() {
-  // Modales
-  const [modalVisible, setModalVisible] = useState(false); 
-  const [calendarioVisible, setCalendarioVisible] = useState(false);
+// Tipado rápido para claridad del flujo
+interface EventoAgenda {
+  tipo: 'bloqueo' | 'cita';
+  titulo: string;
+  detalle: string;
+  hora?: string;
+}
 
-  // Datos del formulario
+export default function Agenda() {
+  // Modales y Controles
+  const [modalBloqueoVisible, setModalBloqueoVisible] = useState(false);
+  const [modalCalendarioVisible, setModalCalendarioVisible] = useState(false);
+  
   const [tipoBloqueo, setTipoBloqueo] = useState<'horas' | 'rango'>('rango'); 
   const [motivo, setMotivo] = useState('');
-  const [fechaTexto, setFechaTexto] = useState('2026-05-16'); // Valor inicial idéntico a tu captura
+  const [fechaTextoFormulario, setFechaTextoFormulario] = useState('Seleccionar periodo');
 
-  // Control del rango del calendario
+  // Estado del Calendario Principal (Pantalla)
+  const [diaSeleccionadoPantalla, setDiaSeleccionadoPantalla] = useState('2026-05-16');
+
+  // ESTADO UNIFICADO DE EVENTOS (Bloqueos y Citas)
+  const [eventosAgenda, setEventosAgenda] = useState<{ [key: string]: EventoAgenda }>({
+    '2026-05-19': { tipo: 'bloqueo', titulo: 'Horario Bloqueado', detalle: 'Motivo: Consulta Externa' },
+    '2026-05-20': { tipo: 'cita', titulo: 'Cita: Carlos Mendoza', detalle: 'Pediatría - 10:00 AM', hora: '10:00 AM' },
+    '2026-05-22': { tipo: 'cita', titulo: 'Cita: Diana Peralta', detalle: 'Control General - 04:30 PM', hora: '04:30 PM' }
+  });
+
+  // Estado temporal para el Calendario del Formulario de Bloqueo
   const [fechaInicio, setFechaInicio] = useState<string | null>(null);
   const [fechaFin, setFechaFin] = useState<string | null>(null);
-  const [periodoMarcado, setPeriodoMarcado] = useState<any>({});
+  const [periodoMarcadoFormulario, setPeriodoMarcadoFormulario] = useState<any>({});
 
-  // Manejador del rango de fechas tipo Gmail
-  const manejarSeleccionDia = (dia: any) => {
+  // Lógica de Selección de Rango en el Formulario
+  const manejarSeleccionRangoBloqueo = (dia: any) => {
     const fechaClave = dia.dateString; 
 
     if (!fechaInicio || (fechaInicio && fechaFin)) {
-      // Primer click: define inicio del rango
       setFechaInicio(fechaClave);
       setFechaFin(null);
-      setFechaTexto(fechaClave);
-      setPeriodoMarcado({
+      setFechaTextoFormulario(fechaClave);
+      setPeriodoMarcadoFormulario({
         [fechaClave]: { startingDay: true, color: '#345195', textColor: 'white' }
       });
     } else if (fechaInicio && !fechaFin && fechaClave >= fechaInicio) {
-      // Segundo click: define fin del rango y calcula los días intermedios
       setFechaFin(fechaClave);
-      setFechaTexto(`${fechaInicio} al ${fechaClave}`);
+      setFechaTextoFormulario(`${fechaInicio} al ${fechaClave}`);
       
       let marcas: any = {};
       let fechaActual = new Date(fechaInicio + 'T00:00:00');
@@ -67,60 +82,216 @@ export default function Agenda() {
         }
         fechaActual.setDate(fechaActual.getDate() + 1);
       }
-      setPeriodoMarcado(marcas);
-      // Opcional: Cierra el selector automáticamente tras elegir el rango completo
-      setTimeout(() => setCalendarioVisible(false), 300);
+      setPeriodoMarcadoFormulario(marcas);
+      setTimeout(() => setModalCalendarioVisible(false), 300);
     } else {
-      // Si selecciona una fecha anterior, reinicia el rango con la nueva fecha
       setFechaInicio(fechaClave);
-      setFechaTexto(fechaClave);
-      setPeriodoMarcado({
+      setFechaTextoFormulario(fechaClave);
+      setPeriodoMarcadoFormulario({
         [fechaClave]: { startingDay: true, color: '#345195', textColor: 'white' }
       });
     }
   };
 
+  // Guardar los bloqueos
   const procesarBloqueo = () => {
-    console.log("Bloqueo confirmado:", { tipoBloqueo, fechaTexto, motivo });
-    setModalVisible(false);
+    if (!fechaInicio) return;
+
+    const nuevosEventos = { ...eventosAgenda };
+    const motivoFinal = motivo.trim() || 'Horario Bloqueado';
+
+    if (tipoBloqueo === 'horas' || !fechaFin) {
+      nuevosEventos[fechaInicio] = { 
+        tipo: 'bloqueo', 
+        titulo: 'Horario Bloqueado', 
+        detalle: `Motivo: ${motivoFinal}` 
+      };
+    } else {
+      let fechaActual = new Date(fechaInicio + 'T00:00:00');
+      const fechaLimite = new Date(fechaFin + 'T00:00:00');
+
+      while (fechaActual <= fechaLimite) {
+        const stringFormateado = fechaActual.toISOString().split('T')[0];
+        nuevosEventos[stringFormateado] = { 
+          tipo: 'bloqueo', 
+          titulo: 'Horario Bloqueado', 
+          detalle: `Motivo: ${motivoFinal}` 
+        };
+        fechaActual.setDate(fechaActual.getDate() + 1);
+      }
+    }
+
+    setEventosAgenda(nuevosEventos);
+    setModalBloqueoVisible(false);
+    
     setMotivo('');
+    setFechaInicio(null);
+    setFechaFin(null);
+    setFechaTextoFormulario('Seleccionar periodo');
+    setPeriodoMarcadoFormulario({});
   };
+
+  // Confirmación antes de borrar el bloqueo
+  const solicitarConfirmacionEliminar = (fechaAEliminar: string) => {
+    Alert.alert(
+      "Liberar Horario",
+      "¿Estás seguro de que deseas eliminar este bloqueo? Los pacientes podrán agendar citas aquí de nuevo.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Eliminar", 
+          style: "destructive", 
+          onPress: () => {
+            const copiaEventos = { ...eventosAgenda };
+            delete copiaEventos[fechaAEliminar];
+            setEventosAgenda(copiaEventos);
+          } 
+        }
+      ]
+    );
+  };
+
+  // NOVEDAD: Construcción de marcas con Diferenciación Visual por Puntos (Dots)
+  const generarMarcasCalendarioPrincipal = () => {
+    let marcas: any = {};
+
+    Object.keys(eventosAgenda).forEach((fecha) => {
+      const infoEvento = eventosAgenda[fecha];
+      
+      if (infoEvento.tipo === 'bloqueo') {
+        // Estilo sutil de bloqueo administrativo
+        marcas[fecha] = {
+          marked: true,
+          dotColor: '#345195', // Punto Azul Marino (Bloqueo)
+          customStyles: {
+            container: { backgroundColor: '#E2E8F0', borderRadius: 8 },
+            text: { color: '#345195', fontWeight: '600' }
+          }
+        };
+      } else if (infoEvento.tipo === 'cita') {
+        // Estilo fresco de cita con paciente
+        marcas[fecha] = {
+          marked: true,
+          dotColor: '#3FB099', // Punto Verde Turquesa Cuida+ (Cita)
+          customStyles: {
+            container: { backgroundColor: '#E6F4F1', borderRadius: 8 },
+            text: { color: '#3FB099', fontWeight: '600' }
+          }
+        };
+      }
+    });
+
+    // Tu azul principal resalta el día enfocado por encima de todo
+    marcas[diaSeleccionadoPantalla] = {
+      ...marcas[diaSeleccionadoPantalla],
+      selected: true,
+      selectedColor: '#345195',
+      textColor: '#FFFFFF'
+    };
+
+    return marcas;
+  };
+
+  const eventoDelDiaActual = eventosAgenda[diaSeleccionadoPantalla];
 
   return (
     <View style={styles.container}>
       
-      {/* PANTALLA PRINCIPAL DE LA AGENDA */}
+      {/* CABECERA */}
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.subBrand}>Cuida+ Gestión</Text>
           <Text style={styles.tituloPantalla}>Mi Agenda</Text>
         </View>
-        <TouchableOpacity style={styles.iconHeaderButton}>
-          <Ionicons name="calendar-outline" size={24} color="#345195" />
+        <TouchableOpacity 
+          style={styles.iconHeaderButton} 
+          onPress={() => setModalBloqueoVisible(true)}
+        >
+          <Ionicons name="lock-closed-outline" size={22} color="#345195" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.contentPlaceholder}>
-        <Text style={styles.hoyLabel}>Hoy</Text>
-        <Text style={{ fontFamily: 'Montserrat', color: '#9CA3AF', marginTop: 20 }}>
-          No hay citas agendadas para mostrar en este momento.
-        </Text>
+      {/* CALENDARIO PRINCIPAL INTERACTIVO */}
+      <View style={styles.calendarioPrincipalContenedor}>
+        <Calendar
+          current={diaSeleccionadoPantalla}
+          onDayPress={(day) => setDiaSeleccionadoPantalla(day.dateString)}
+          markingType={'custom'}
+          markedDates={generarMarcasCalendarioPrincipal()}
+          theme={{
+            calendarBackground: '#FFFFFF',
+            textSectionTitleColor: '#9CA3AF',
+            todayTextColor: '#3FB099',
+            dayTextColor: '#1F2937',
+            arrowColor: '#345195',
+            monthTextColor: '#1F2937',
+            textDayFontFamily: 'Montserrat',
+            textMonthFontFamily: 'Montserrat',
+            textDayHeaderFontFamily: 'Montserrat',
+          }}
+          style={styles.calendarioCardEstilo}
+        />
       </View>
 
-      {/* BOTÓN FLOTANTE */}
-      <TouchableOpacity 
-        style={styles.botonFlotanteCandado}
-        onPress={() => setModalVisible(true)}
-      >
-        <Ionicons name="lock-closed" size={26} color="#FFFFFF" />
-      </TouchableOpacity>
+      {/* SECCIÓN INFERIOR: SEGUIMIENTO DE LA AGENDA */}
+      <View style={styles.agendaCitasSeccion}>
+        <View style={styles.subHeaderCitas}>
+          <Text style={styles.citasTituloLabel}>Agenda del día</Text>
+          <Text style={styles.fechaSeleccionadaLabel}>{diaSeleccionadoPantalla}</Text>
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+          {eventoDelDiaActual ? (
+            eventoDelDiaActual.tipo === 'bloqueo' ? (
+              /* Bloqueo Administrativo */
+              <View style={styles.tarjetaBloqueoActivo}>
+                <View style={styles.tarjetaBloqueoContenidoIzquierda}>
+                  <View style={styles.tarjetaBloqueoHeader}>
+                    <Ionicons name="lock-closed" size={16} color="#345195" />
+                    <Text style={styles.tarjetaBloqueoTitulo}>{eventoDelDiaActual.titulo}</Text>
+                  </View>
+                  <Text style={styles.tarjetaBloqueoMotivo}>{eventoDelDiaActual.detalle}</Text>
+                </View>
+
+                <TouchableOpacity 
+                  style={styles.botonEliminarBloqueo}
+                  onPress={() => solicitarConfirmacionEliminar(diaSeleccionadoPantalla)}
+                  activeOpacity={0.6}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#4B5563" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              /* Cita Médica de Cuida+ */
+              <View style={styles.tarjetaCitaMedica}>
+                <View style={styles.tarjetaCitaIconoContenedor}>
+                  <Ionicons name="person" size={18} color="#3FB099" />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.tarjetaCitaTitulo}>{eventoDelDiaActual.titulo}</Text>
+                  <Text style={styles.tarjetaCitaDetalle}>{eventoDelDiaActual.detalle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+              </View>
+            )
+          ) : (
+            /* Placeholder por defecto */
+            <View style={styles.citasVaciasContainer}>
+              <Ionicons name="calendar-clear-outline" size={32} color="#D1D5DB" />
+              <Text style={styles.citasVaciasTexto}>
+                No hay citas programadas ni bloqueos para este día.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
 
       {/* MODAL PRINCIPAL: FORMULARIO DE BLOQUEO */}
       <Modal
         animationType="fade"
         transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        visible={modalBloqueoVisible}
+        onRequestClose={() => setModalBloqueoVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -150,15 +321,14 @@ export default function Agenda() {
 
             <ScrollView showsVerticalScrollIndicator={false} style={{ width: '100%' }}>
               
-              <Text style={styles.label}>Fecha de Fin del Bloqueo (AAAA-MM-DD):</Text>
+              <Text style={styles.label}>Periodo del Bloqueo:</Text>
               
-              {/* CAMPO INTERACTIVO QUE ACTÚA COMO INPUT PERO ABRE EL CALENDARIO */}
               <TouchableOpacity 
                 style={styles.inputFechaFalso} 
-                onPress={() => setCalendarioVisible(true)}
+                onPress={() => setModalCalendarioVisible(true)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.inputFechaFalsoTexto}>{fechaTexto}</Text>
+                <Text style={styles.inputFechaFalsoTexto}>{fechaTextoFormulario}</Text>
                 <Ionicons name="calendar" size={18} color="#9CA3AF" />
               </TouchableOpacity>
 
@@ -176,7 +346,7 @@ export default function Agenda() {
                 <Text style={styles.botonConfirmarText}>Confirmar Bloqueo</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.botonVolver} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity style={styles.botonVolver} onPress={() => setModalBloqueoVisible(false)}>
                 <Text style={styles.botonVolverText}>Volver</Text>
               </TouchableOpacity>
 
@@ -185,32 +355,32 @@ export default function Agenda() {
         </View>
       </Modal>
 
-      {/* DESPLEGABLE DESDE ABAJO TIPO GMAIL PARA EL CALENDARIO */}
+      {/* MODAL INTERNO: SELECTOR DE RANGOS */}
       <Modal
         animationType="slide"
         transparent={true}
-        visible={calendarioVisible}
-        onRequestClose={() => setCalendarioVisible(false)}
+        visible={modalCalendarioVisible}
+        onRequestClose={() => setModalCalendarioVisible(false)}
       >
         <View style={styles.calendarioModalOverlay}>
           <View style={styles.calendarioModalContent}>
             <View style={styles.calendarioHeaderModal}>
-              <Text style={styles.calendarioModalTitulo}>Selecciona el Periodo</Text>
-              <TouchableOpacity onPress={() => setCalendarioVisible(false)}>
+              <Text style={styles.calendarioModalTitulo}>Selecciona el Intervalo</Text>
+              <TouchableOpacity onPress={() => setModalCalendarioVisible(false)}>
                 <Ionicons name="close-circle" size={24} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
 
             <Calendar
               markingType={'period'}
-              markedDates={periodoMarcado}
-              onDayPress={manejarSeleccionDia}
+              markedDates={periodoMarcadoFormulario}
+              onDayPress={manejarSeleccionRangoBloqueo}
               theme={{
                 calendarBackground: '#FFFFFF',
                 textSectionTitleColor: '#9CA3AF',
                 selectedDayBackgroundColor: '#345195',
                 selectedDayTextColor: '#ffffff',
-                todayTextColor: '#059669',
+                todayTextColor: '#3FB099',
                 dayTextColor: '#1F2937',
                 arrowColor: '#345195',
                 monthTextColor: '#1F2937',
@@ -218,12 +388,12 @@ export default function Agenda() {
                 textMonthFontFamily: 'Montserrat',
                 textDayHeaderFontFamily: 'Montserrat',
               }}
-              style={styles.calendarioCard}
+              style={styles.calendarioCardFormulario}
             />
 
             <TouchableOpacity 
-              style={[styles.botonConfirmar, { marginTop: 10 }]} 
-              onPress={() => setCalendarioVisible(false)}
+              style={[styles.botonConfirmar, { marginTop: 16 }]} 
+              onPress={() => setModalCalendarioVisible(false)}
             >
               <Text style={styles.botonConfirmarText}>Listo</Text>
             </TouchableOpacity>
@@ -237,15 +407,36 @@ export default function Agenda() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F3F4F6', paddingHorizontal: 24, paddingTop: 60 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   subBrand: { fontFamily: 'Montserrat', fontSize: 13, fontWeight: '600', color: '#3FB099' },
   tituloPantalla: { fontFamily: 'Montserrat', fontSize: 26, fontWeight: '700', color: '#1F2937' },
-  iconHeaderButton: { backgroundColor: '#FFFFFF', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  hoyLabel: { fontFamily: 'Montserrat', fontSize: 16, fontWeight: '700', color: '#345195' },
-  contentPlaceholder: { flex: 1, marginTop: 10 },
-  botonFlotanteCandado: { position: 'absolute', bottom: 30, right: 24, backgroundColor: '#345195', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 8 },
+  iconHeaderButton: { backgroundColor: '#FFFFFF', padding: 11, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
   
-  // Estilos del Formulario principal
+  calendarioPrincipalContenedor: { width: '100%', marginBottom: 16 },
+  calendarioCardEstilo: { borderRadius: 18, padding: 8, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  
+  agendaCitasSeccion: { flex: 1, marginTop: 4 },
+  subHeaderCitas: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingHorizontal: 2 },
+  citasTituloLabel: { fontFamily: 'Montserrat', fontSize: 16, fontWeight: '700', color: '#1F2937' },
+  fechaSeleccionadaLabel: { fontFamily: 'Montserrat', fontSize: 13, fontWeight: '600', color: '#345195', backgroundColor: '#E2E8F0', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  
+  citasVaciasContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 36, backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', borderStyle: 'dashed', marginTop: 4 },
+  citasVaciasTexto: { fontFamily: 'Montserrat', fontSize: 13, color: '#9CA3AF', textAlign: 'center', marginTop: 10, paddingHorizontal: 32, lineHeight: 18 },
+
+  // Tarjeta Bloqueo
+  tarjetaBloqueoActivo: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 16, padding: 16, marginTop: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  tarjetaBloqueoContenidoIzquierda: { flex: 1, paddingRight: 8 },
+  tarjetaBloqueoHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  tarjetaBloqueoTitulo: { fontFamily: 'Montserrat', fontSize: 15, fontWeight: '700', color: '#345195', marginLeft: 8 },
+  tarjetaBloqueoMotivo: { fontFamily: 'Montserrat', fontSize: 13, color: '#4B5563', lineHeight: 18 },
+  botonEliminarBloqueo: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
+
+  // NUEVO: Tarjeta Cita Médica (Identidad Cuida+)
+  tarjetaCitaMedica: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, marginTop: 4, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.02, shadowRadius: 2, elevation: 1 },
+  tarjetaCitaIconoContenedor: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#E6F4F1', justifyContent: 'center', alignItems: 'center' },
+  tarjetaCitaTitulo: { fontFamily: 'Montserrat', fontSize: 15, fontWeight: '700', color: '#1F2937' },
+  tarjetaCitaDetalle: { fontFamily: 'Montserrat', fontSize: 13, color: '#6B7280', marginTop: 2 },
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 28, padding: 24, alignItems: 'center', maxHeight: '85%' },
   modalTitulo: { fontFamily: 'Montserrat', fontSize: 20, fontWeight: '700', color: '#1F2937', marginBottom: 4, textAlign: 'center' },
@@ -256,21 +447,17 @@ const styles = StyleSheet.create({
   tabButtonText: { fontFamily: 'Montserrat', fontSize: 13, fontWeight: '600', color: '#6B7280' },
   tabButtonTextActive: { color: '#FFFFFF' },
   label: { fontFamily: 'Montserrat', fontSize: 13, fontWeight: '600', color: '#4B5563', marginBottom: 8, alignSelf: 'flex-start' },
-  
-  // El "Input" Falso para abrir calendario
   inputFechaFalso: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 14, marginBottom: 20 },
   inputFechaFalsoTexto: { fontFamily: 'Montserrat', fontSize: 14, color: '#1F2937' },
-  
   inputMotivo: { width: '100%', backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, fontFamily: 'Montserrat', fontSize: 14, color: '#1F2937', minHeight: 80, textAlignVertical: 'top', marginBottom: 20 },
   botonConfirmar: { width: '100%', backgroundColor: '#3FB099', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 },
   botonConfirmarText: { fontFamily: 'Montserrat', fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   botonVolver: { width: '100%', paddingVertical: 10, alignItems: 'center' },
   botonVolverText: { fontFamily: 'Montserrat', fontSize: 14, fontWeight: '600', color: '#6B7280' },
 
-  // Estilos del Modal secundario del Calendario (Estilo Gmail)
   calendarioModalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.3)', justifyContent: 'flex-end' },
   calendarioModalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
   calendarioHeaderModal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   calendarioModalTitulo: { fontFamily: 'Montserrat', fontSize: 16, fontWeight: '700', color: '#1F2937' },
-  calendarioCard: { borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', padding: 4, width: '100%' }
+  calendarioCardFormulario: { borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', padding: 4, width: '100%' }
 });
