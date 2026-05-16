@@ -112,6 +112,81 @@ app.post("/registro", async (req, res) => {
     }
 });
 
+// ==========================================================================
+// RUTA PARA REGISTRO DE PACIENTE POR PARTE DE LA RECEPCIONISTA (SOLO PERFIL)
+// ==========================================================================
+app.post("/registro-recepcion", async (req, res) => {
+    // 1. CORREGIDO: Cambiado 'nombres' por 'nombre' para que coincida con tu frontend estándar
+    const { 
+        nombre, 
+        apellidos, 
+        fechaNacimiento, 
+        genero, 
+        telefono, 
+        correo, 
+        password
+    } = req.body;
+
+    // Validación básica de los datos indispensables
+    if (!nombre || !apellidos || !fechaNacimiento || !correo || !password) {
+        return res.status(400).json({
+            error: "Los campos Nombre, Apellidos, Fecha de Nacimiento, Correo y Password son obligatorios."
+        });
+    }
+
+    try {
+        const pool = await sql.connect(dbConfig);
+
+        const correoLimpio = correo.trim().toLowerCase();
+
+        // 2. VERIFICAR SI EL PACIENTE YA EXISTE (Fiel al modelo original)
+        const usuarioExistente = await pool.request()
+            .input('correo', sql.VarChar(100), correoLimpio)
+            .query(`
+                SELECT * FROM Paciente 
+                WHERE LOWER(Correo) = @correo
+            `);
+
+        if (usuarioExistente.recordset.length > 0) {
+            return res.status(400).json({
+                error: "Ya existe una cuenta con este correo electrónico."
+            });
+        }
+
+        // 3. INSERTAR ÚNICAMENTE EL NUEVO PACIENTE 
+        // Se cambió sql.VarChar(10) por sql.Date para aceptar el formato YYYY-MM-DD
+        const queryPaciente = await pool.request()
+            .input('nombres', sql.VarChar(50), nombre)
+            .input('apellidos', sql.VarChar(50), apellidos)
+            .input('fecha', sql.Date, fechaNacimiento) 
+            .input('genero', sql.Char(1), genero) 
+            .input('tel', sql.VarChar(20), telefono || null)
+            .input('correo', sql.VarChar(100), correoLimpio)
+            .input('pass', sql.VarChar(255), password) 
+            .query(`
+                INSERT INTO Paciente (Nombres, Apellidos, FechaNacimiento, Genero, Telefono, Correo, Password)
+                OUTPUT INSERTED.IdPaciente
+                VALUES (@nombres, @apellidos, @fecha, @genero, @tel, @correo, @pass)
+            `);
+
+        const nuevoIdPaciente = queryPaciente.recordset[0].IdPaciente;
+
+        res.json({
+            resultado: 1,
+            mensaje: "Perfil de paciente creado con éxito en CuidaPlus.",
+            idPaciente: nuevoIdPaciente,
+            usuario: { nombre, correo: correoLimpio }
+        });
+
+    } catch (err) {
+        console.error("Error en el registro de recepción:", err.message);
+        res.status(500).json({
+            resultado: 0,
+            error: "No se pudo guardar el paciente en la base de datos: " + err.message
+        });
+    }
+});
+
 // Obtener lista de todos los Pacientes 
 app.get("/usuarios", async (req, res) => {
      try {

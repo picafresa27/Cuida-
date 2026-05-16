@@ -1,0 +1,378 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+    Alert,
+    FlatList,
+    Keyboard,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
+} from "react-native";
+
+export default function RegistroPaciente() {
+  const router = useRouter();
+  const [paso, setPaso] = useState(1); // 1: Datos Personales, 2: Datos de Cita
+  const [modalGeneroVisible, setModalGeneroVisible] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [date, setDate] = useState(new Date()); // Guarda el objeto de fecha real
+
+  // Opciones para la barra desplegable de género
+  const opcionesGenero = ["Masculino", "Femenino", "Otro", "Prefiero no decirlo"];
+
+  // Estado del formulario (Cambiado a contrasenaAuto sin 'ñ' para TypeScript)
+  const [form, setForm] = useState({
+    nombres: "",
+    apellidos: "",
+    correo: "",
+    telefono: "",
+    fechaNacimiento: "", // Formato DD/MM/AAAA
+    genero: "Seleccionar género",
+    contrasenaAuto: "", // Se llenará sola
+    especialidad: "",
+    doctor: "",
+    hora: "10:00 AM",
+  });
+
+  const onChangeFecha = (event: any, selectedDate?: Date) => {
+    if (event.type === "dismissed") {
+        setShowCalendar(false);
+        return;
+    }
+
+    const currentDate = selectedDate || date;
+    setShowCalendar(Platform.OS === 'ios'); 
+    setDate(currentDate);
+
+    const dia = String(currentDate.getDate()).padStart(2, '0');
+    const mes = String(currentDate.getMonth() + 1).padStart(2, '0'); 
+    const anio = String(currentDate.getFullYear());
+
+    const fechaFormateada = `${dia}/${mes}/${anio}`; 
+    const passwordGenerada = `${dia}${mes}${anio}`; 
+
+    setForm({
+        ...form,
+        fechaNacimiento: fechaFormateada,
+        contrasenaAuto: passwordGenerada,
+    });
+  };
+
+  const handleSiguiente = () => {
+    if (!form.nombres || !form.apellidos || !form.fechaNacimiento || form.genero === "Seleccionar género") {
+      Alert.alert("Campos obligatorios", "Por favor llenar todos los campos solicitados.");
+      return;
+    }
+
+    if (!form.telefono) {
+      Alert.alert("Contacto necesario", "Debes ingresar al menos el teléfono para el acceso.");
+      return;
+    }
+
+    if (form.contrasenaAuto.length < 8) {
+      Alert.alert("Fecha incompleta", "Por favor ingresa la fecha de nacimiento completa.");
+      return;
+    }
+
+    setPaso(2);
+  };
+
+  const finalizarRegistro = async () => {
+    if (!form.especialidad || !form.doctor) {
+      Alert.alert("Cita incompleta", "Debes asignar una especialidad y un doctor.");
+      return;
+    }
+
+    try {
+      // ⚠️ REEMPLAZA ESTA URL CON TU IP LOCAL (Ej: http://192.168.1.75:3000/registro-recepcion) O LINK DE CODESPACES
+      const urlAPI = "http://TU_IP_DE_CODESPACES_O_LOCAL:3000/registro-recepcion"; 
+
+      const response = await fetch(urlAPI, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nombres: form.nombres,
+          apellidos: form.apellidos,
+          fechaNacimiento: form.fechaNacimiento, 
+          genero: form.genero,
+          telefono: form.telefono || null,
+          correo: form.correo || null,
+          password: form.contrasenaAuto, 
+          idDoctor: 1, 
+          horaCita: form.hora,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.resultado === 1) {
+        Alert.alert(
+          "¡Guardado en Azure SQL! 🚀",
+          `El paciente y su cita se registraron con éxito en CuidaPlus.\n\n` +
+          `ENTREGAR CREDENCIALES AL PACIENTE:\n` +
+          `👤 Usuario: ${data.usuarioLogin}\n` +
+          `🔑 Contraseña: ${form.contrasenaAuto}`,
+          [
+            { 
+              text: "Entendido", 
+              onPress: () => router.replace("./index") 
+            }
+          ]
+        );
+      } else {
+        Alert.alert("No se pudo registrar", data.error || "Revisa los datos ingresados.");
+      }
+
+    } catch (error) {
+      console.error("Error de red en el frontend:", error);
+      Alert.alert("Error de Conexión", "No se pudo establecer comunicación con el backend de CuidaPlus.");
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled" 
+        >
+        
+        {/* Encabezado e indicador de pasos */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Nuevo Paciente</Text>
+          <Text style={styles.stepText}>
+            {paso === 1 ? "Paso 1: Datos de la Cuenta" : "Paso 2: Detalles de la Cita"}
+          </Text>
+        </View>
+
+        {paso === 1 ? (
+          <View style={styles.form}>
+            <Text style={styles.label}>Nombre(s)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ejem. Edgar"
+              value={form.nombres}
+              onChangeText={(v) => setForm({ ...form, nombres: v })}
+            />
+
+            <Text style={styles.label}>Apellidos</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ejem. Lopez"
+              value={form.apellidos}
+              onChangeText={(v) => setForm({ ...form, apellidos: v })}
+            />
+
+            <Text style={styles.label}>Correo Electrónico (Opcional)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="correo@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={form.correo}
+              onChangeText={(v) => setForm({ ...form, correo: v })}
+            />
+
+            <Text style={styles.label}>Teléfono</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ej. 6621234567"
+              keyboardType="phone-pad"
+              maxLength={10}
+              value={form.telefono}
+              onChangeText={(v) => setForm({ ...form, telefono: v })}
+            />
+
+            <Text style={styles.label}>Fecha de Nacimiento</Text>
+            <TouchableOpacity
+              style={styles.dropdown} 
+              onPress={() => setShowCalendar(true)}
+            >
+              <Text style={form.fechaNacimiento === "" ? styles.dropdownPlaceholder : styles.dropdownText}>
+                {form.fechaNacimiento === "" ? "Seleccionar fecha" : form.fechaNacimiento}
+              </Text>
+            </TouchableOpacity>
+
+            {showCalendar && (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display="default"
+                maximumDate={new Date()} 
+                onChange={onChangeFecha}
+              />
+            )}
+
+            <Text style={styles.label}>Contraseña asignada</Text>
+            <TextInput
+              style={[styles.input, styles.inputDeshabilitado]}
+              placeholder="Se generará sola"
+              value={form.contrasenaAuto}
+              editable={false} 
+            />
+
+            <Text style={styles.label}>Género</Text>
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => setModalGeneroVisible(true)}
+            >
+              <Text style={form.genero === "Seleccionar género" ? styles.dropdownPlaceholder : styles.dropdownText}>
+                {form.genero}
+              </Text>
+              <Text style={styles.dropdownIcon}>▼</Text>
+            </TouchableOpacity>
+
+            {/* BOTÓN CORRECTO PASO 1 */}
+            <TouchableOpacity style={styles.btnPrimario} onPress={handleSiguiente}>
+              <Text style={styles.btnText}>Continuar a la Cita →</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.form}>
+            <Text style={styles.label}>Especialidad</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ejem. Odontología"
+              value={form.especialidad}
+              onChangeText={(v) => setForm({ ...form, especialidad: v })}
+            />
+
+            <Text style={styles.label}>Doctor Asignado</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ejem. Dr. Armando Casas"
+              value={form.doctor}
+              onChangeText={(v) => setForm({ ...form, doctor: v })}
+            />
+
+            <View style={styles.infoCita}>
+              <Text style={styles.infoCitaText}>📅 Fecha de la Cita: Hoy</Text>
+              <Text style={styles.infoCitaText}>⏰ Hora Asignada: {form.hora}</Text>
+            </View>
+
+            {/* 🛠️ MODIFICADO: Ahora corre 'finalizarRegistro' para mandar los datos a Node.js */}
+            <TouchableOpacity style={styles.btnPrimario} onPress={finalizarRegistro}>
+              <Text style={styles.btnText}>Confirmar Registro y Cita</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setPaso(1)}>
+              <Text style={styles.btnRegresar}>← Regresar a datos personales</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Modal desplegable de Género */}
+        <Modal
+          visible={modalGeneroVisible}
+          transparent={true}
+          animationType="fade"
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => setModalGeneroVisible(false)}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Selecciona el Género</Text>
+              <FlatList
+                data={opcionesGenero}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setForm({ ...form, genero: item });
+                      setModalGeneroVisible(false);
+                    }}
+                  >
+                    <Text style={styles.modalItemText}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+      </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  scrollContainer: { padding: 30 },
+  header: { alignItems: "center", marginBottom: 25 },
+  title: { fontSize: 26, fontWeight: "bold", color: "#1A202C", marginBottom: 5 },
+  stepText: { fontSize: 14, color: "#345195", fontWeight: "bold" },
+  form: { width: "100%" },
+  label: { fontSize: 14, fontWeight: "bold", color: "#4A5568", marginBottom: 8 },
+  input: {
+    backgroundColor: "#F7FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    padding: 15,
+    fontSize: 16,
+    marginBottom: 18,
+    color: "#2D3748"
+  },
+  inputDeshabilitado: {
+    backgroundColor: "#EDF2F7",
+    color: "#4A5568",
+    fontWeight: "bold",
+  },
+  dropdown: {
+    backgroundColor: "#F7FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    padding: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 25,
+  },
+  dropdownPlaceholder: { color: "#A0AEC0", fontSize: 16 },
+  dropdownText: { color: "#2D3748", fontSize: 16, fontWeight: "500" },
+  dropdownIcon: { color: "#718096", fontSize: 12 },
+  btnPrimario: {
+    backgroundColor: "#345195",
+    padding: 18,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 10,
+    elevation: 2,
+  },
+  btnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  btnRegresar: { textAlign: "center", marginTop: 20, color: "#718096", textDecorationLine: "underline" },
+  infoCita: {
+    backgroundColor: "#E6FFFA",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#B2F5EA",
+  },
+  infoCitaText: { color: "#2C7A7B", fontWeight: "bold", marginBottom: 5 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
+  modalContent: { backgroundColor: "#FFF", width: "80%", borderRadius: 16, padding: 20, maxHeight: "50%" },
+  modalTitle: { fontSize: 18, fontWeight: "bold", color: "#1A202C", marginBottom: 15, textAlign: "center" },
+  modalItem: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: "#EDF2F7" },
+  modalItemText: { fontSize: 16, color: "#2D3748", textAlign: "center" },
+});
