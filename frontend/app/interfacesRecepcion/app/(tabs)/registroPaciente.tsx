@@ -2,21 +2,22 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Alert,
+  FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
+import API_URL from "../../../../config/api";
 
 export default function RegistroPaciente() {
   const router = useRouter();
@@ -86,58 +87,66 @@ export default function RegistroPaciente() {
   };
 
   const finalizarRegistro = async () => {
-    if (!form.especialidad || !form.doctor) {
-      Alert.alert("Cita incompleta", "Debes asignar una especialidad y un doctor.");
-      return;
+  if (!form.especialidad || !form.doctor) {
+    Alert.alert("Cita incompleta", "Debes asignar una especialidad y un doctor.");
+    return;
+  }
+
+  try {
+    // 1. PRIMERO: Registrar al Paciente usando el endpoint que ya tienes (/registro)
+    const responseRegistro = await fetch(`${API_URL}/registro`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        nombre: form.nombres, // Coincidiendo con los nombres en tu server.js
+        apellidos: form.apellidos,
+        fechaNacimiento: date.toISOString().split('T')[0], // Formato correcto para SQL (YYYY-MM-DD)
+        genero: form.genero.charAt(0), // 'M', 'F', 'O', 'P' (Según tu char(1) en BD)
+        telefono: form.telefono,
+        correo: form.correo || `${form.nombres.toLowerCase().replace(/\s/g, '')}@cuidaplus.com`, // Correo autogenerado si no lo proporciona, requerido por tu BD
+        password: form.contrasenaAuto, 
+      }),
+    });
+
+    const dataRegistro = await responseRegistro.json();
+
+    // Si falló el registro, mostramos el error y detenemos el proceso
+    if (!responseRegistro.ok) {
+       Alert.alert("Error al registrar paciente", dataRegistro.error || "Verifica los datos.");
+       return;
     }
 
-    try {
-      // ⚠️ REEMPLAZA ESTA URL CON TU IP LOCAL (Ej: http://192.168.1.75:3000/registro-recepcion) O LINK DE CODESPACES
-      const urlAPI = "http://TU_IP_DE_CODESPACES_O_LOCAL:3000/registro-recepcion"; 
+    // --- EN ESTE PUNTO EL PACIENTE YA ESTÁ EN LA BD ---
 
-      const response = await fetch(urlAPI, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          nombres: form.nombres,
-          apellidos: form.apellidos,
-          fechaNacimiento: form.fechaNacimiento, 
-          genero: form.genero,
-          telefono: form.telefono || null,
-          correo: form.correo || null,
-          password: form.contrasenaAuto, 
-          idDoctor: 1, 
-          horaCita: form.hora,
-        }),
-      });
+    // 2. SEGUNDO: Como el registro no devuelve el ID del nuevo paciente (solo el nombre y correo),
+    // tendrías que modificar tu backend en /registro para que devuelva el ID insertado,
+    // o hacer otra petición para buscar su ID. 
+    //
+    // ⚠️ Por ahora, detendré aquí la creación de la cita, ya que tu endpoint /agendarCita
+    // requiere el 'idPaciente', el cual no tenemos tras ejecutar /registro.
 
-      const data = await response.json();
+    Alert.alert(
+      "¡Guardado en Azure SQL! 🚀",
+      `El paciente se registró con éxito en CuidaPlus.\n\n` +
+      `ENTREGAR CREDENCIALES AL PACIENTE:\n` +
+      `👤 Correo: ${dataRegistro.usuario.correo}\n` +
+      `🔑 Contraseña: ${form.contrasenaAuto}\n\n` +
+      `Nota: Falta vincular la cita porque necesitamos el ID del nuevo paciente.`,
+      [
+        { 
+          text: "Entendido", 
+          onPress: () => router.replace("./index") // O la ruta a donde quieras redirigir
+        }
+      ]
+    );
 
-      if (response.ok && data.resultado === 1) {
-        Alert.alert(
-          "¡Guardado en Azure SQL! 🚀",
-          `El paciente y su cita se registraron con éxito en CuidaPlus.\n\n` +
-          `ENTREGAR CREDENCIALES AL PACIENTE:\n` +
-          `👤 Usuario: ${data.usuarioLogin}\n` +
-          `🔑 Contraseña: ${form.contrasenaAuto}`,
-          [
-            { 
-              text: "Entendido", 
-              onPress: () => router.replace("./index") 
-            }
-          ]
-        );
-      } else {
-        Alert.alert("No se pudo registrar", data.error || "Revisa los datos ingresados.");
-      }
-
-    } catch (error) {
-      console.error("Error de red en el frontend:", error);
-      Alert.alert("Error de Conexión", "No se pudo establecer comunicación con el backend de CuidaPlus.");
-    }
-  };
+  } catch (error) {
+    console.error("Error de red en el frontend:", error);
+    Alert.alert("Error de Conexión", "No se pudo establecer comunicación con el backend.");
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>
