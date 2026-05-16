@@ -1,0 +1,220 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Link, useRouter } from "expo-router";
+import { useContext, useState } from "react";
+import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  TouchableWithoutFeedback, // 1. Importamos para poder cerrar el teclado al picar fuera
+  Keyboard,                // 2. Importamos el gestor del teclado
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import API_URL from "../config/api";
+import { UserContext } from "../context/userContext";
+
+export default function LoginScreen() {
+  const router = useRouter();
+  const { setUsuario } = useContext(UserContext);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [verPassword, setVerPassword] = useState(true);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Completa todos los campos");
+      return;
+    }
+    const correoUsuario = email.toLowerCase();
+
+    if (correoUsuario.endsWith("@cuidaplus.com")) {
+      try {
+        const res = await fetch(`${API_URL}/loginDoctor`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ correo: email, password: password }),
+        });
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
+
+        if (!res.ok) {
+          Alert.alert("Error", data.error || "No se pudo iniciar sesión");
+          return;
+        }
+
+        Alert.alert("Éxito", "Inicio de sesión exitoso");
+        router.replace({
+          pathname: "../interfacesDoctor/inicioDoctor",
+          params: { nombre: data.usuario.nombres },
+        });
+        setUsuario(data.usuario);
+      } catch (error) {
+        Alert.alert("Error", "No se pudo conectar al servidor");
+        console.log("Error login:", error);
+      }
+    } else {
+      try {
+        const res = await fetch(`${API_URL}/login`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ correo: email, password: password }),
+        });
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
+
+        if (!res.ok) {
+          Alert.alert("Error", data.error || "No se pudo iniciar sesión");
+          return;
+        }
+
+        Alert.alert("Éxito", "Inicio de sesión exitoso");
+        setUsuario(data.usuario);
+
+        if (correoUsuario.startsWith("rec.") && correoUsuario.endsWith("@cuidaplus.com")) {
+          router.replace("../interfacesRecepcion/app/(tabs)");
+        } else if (correoUsuario.endsWith("@cuidaplus.com")) {
+          router.replace("../interfacesDoctor/inicioDoctor");
+        } else {
+          router.replace("/(tabs)");
+        }
+      } catch (error) {
+        console.log("Error login:", error);
+        Alert.alert("Error", "No se pudo conectar al servidor");
+      }
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        {/* Envolvemos el ScrollView para que al tocar zonas libres se oculte el teclado */}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          {/* keyboardShouldPersistTaps="handled" permite picar a los botones directamente sin que el primer clic sea solo para cerrar el teclado */}
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Logo */}
+            <Image
+              source={require("./img/logo_cuida+.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+
+            {/* Encabezado */}
+            <Text style={styles.titulo}>Iniciar sesión</Text>
+            <Text style={styles.subtitulo}>
+              Accede a tu cuenta para gestionar citas, consultas y seguimiento médico.
+            </Text>
+
+            {/* Formulario */}
+            <View style={styles.form}>
+              {/* Input Correo */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Correo electrónico</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="correo@gmail.com"
+                  placeholderTextColor="#A0AEC0"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
+
+              {/* Input Contraseña */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Contraseña</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.inputFlex}
+                    placeholder=".........."
+                    placeholderTextColor="#A0AEC0"
+                    secureTextEntry={verPassword}
+                    value={password}
+                    onChangeText={setPassword}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setVerPassword(!verPassword)}
+                  >
+                    <Ionicons
+                      name={verPassword ? "eye-off-outline" : "eye-outline"}
+                      size={22}
+                      color="#718096"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Botones */}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.botonPrimario}
+                  onPress={handleLogin}
+                >
+                  <Text style={styles.textoBlanco}>Entrar</Text>
+                </TouchableOpacity>
+
+                {/*@ts-ignore*/}
+                <Link href="/registro" asChild>
+                  <TouchableOpacity style={styles.botonSecundario}>
+                    <Text style={styles.textoAzul}>Crear cuenta</Text>
+                  </TouchableOpacity>
+                </Link>
+              </View>
+
+              {/* Link de Olvidé contraseña */}
+              <TouchableOpacity 
+                style={styles.forgotPass}
+                onPress={() => router.push('/recuperarContra')}
+              >
+                <Text style={styles.textoForgot}>¿Olvidaste tu contraseña?</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+// ... Tus estilos originales (styles) se quedan exactamente iguales
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  scrollContent: { alignItems: "center", paddingHorizontal: 30, paddingVertical: 40 },
+  logo: { width: 180, height: 180, marginBottom: 10 },
+  titulo: { fontSize: 32, fontWeight: "bold", color: "#1A202C", textAlign: "center", marginBottom: 8 },
+  subtitulo: { fontSize: 14, color: "#718096", textAlign: "center", lineHeight: 20, marginBottom: 35, paddingHorizontal: 10 },
+  form: { width: "100%" },
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: "600", color: "#4a5568", marginBottom: 8, marginLeft: 4 },
+  input: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingVertical: 15, paddingHorizontal: 15, fontSize: 16, color: "#2D3748" },
+  buttonContainer: { marginTop: 10, gap: 15 },
+  botonPrimario: { backgroundColor: "#345195", paddingVertical: 18, borderRadius: 12, alignItems: "center", width: "100%" },
+  botonSecundario: { backgroundColor: "#FFFFFF", paddingVertical: 18, borderRadius: 12, alignItems: "center", width: "100%", borderWidth: 1, borderColor: "#E2E8F0" },
+  textoBlanco: { color: "#FFFFFF", fontSize: 18, fontWeight: "700" },
+  textoAzul: { color: "#2D3748", fontSize: 18, fontWeight: "700" },
+  forgotPass: { marginTop: 30, alignItems: "center" },
+  textoForgot: { color: "#41A69A", fontSize: 14, fontWeight: "600", textDecorationLine: "underline" },
+  passwordContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12 },
+  inputFlex: { flex: 1, paddingVertical: 15, paddingHorizontal: 15, fontSize: 16, color: "#2D3748" },
+  eyeIcon: { paddingHorizontal: 15 },
+});

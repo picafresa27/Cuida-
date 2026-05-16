@@ -1,16 +1,16 @@
 import React, { useContext, useEffect, useState } from "react";
 import {
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Modal,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import API_URL from "../../config/api";
-import { UserContext } from "../../context/userContext";
+import API_URL from "../../../config/api";
+import { UserContext } from "../../../context/userContext";
 
 export default function PacientesDoctor() {
   const [busqueda, setBusqueda] = useState("");

@@ -116,7 +116,7 @@ const cerrarSesion = () => {
   setUsuario(null);
 
   // Ir al login
-  router.replace("../inicioSesion");
+  router.replace("/inicioSesion");
 };
 
   return (

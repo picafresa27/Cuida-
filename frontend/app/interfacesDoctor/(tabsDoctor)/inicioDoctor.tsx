@@ -1,8 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useContext, useEffect, useState } from "react";
-import { io } from "socket.io-client";
-import API_URL from "../../config/api";
-import { Ionicons } from "@expo/vector-icons";
 import {
   SafeAreaView,
   ScrollView,
@@ -11,12 +9,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { io } from "socket.io-client";
+import API_URL from "../../../config/api";
+import { UserContext } from "../../../context/userContext";
 
 // Configuración del Socket (mismo endpoint, diferente canal si fuera necesario)
 //const URL_BACKEND = `${API_URL}/usuarios`;
 //const socket = io(URL_BACKEND);
-import { UserContext } from "../../context/userContext";
-
 export default function HomeDoctor() {
   const { usuario } = useContext(UserContext);
   const router = useRouter();

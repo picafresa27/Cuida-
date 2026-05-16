@@ -19,7 +19,8 @@
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "package": "com.tuusuario.cuidaplus"
+      "package": "com.tuusuario.cuidaplus",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "bundler": "metro",

@@ -117,13 +117,13 @@ app.post("/registro", async (req, res) => {
 // ==========================================================================
 app.post("/registro-recepcion", async (req, res) => {
     // 1. CORREGIDO: Cambiado 'nombres' por 'nombre' para que coincida con tu frontend estándar
-    const { 
-        nombre, 
-        apellidos, 
-        fechaNacimiento, 
-        genero, 
-        telefono, 
-        correo, 
+    const {
+        nombre,
+        apellidos,
+        fechaNacimiento,
+        genero,
+        telefono,
+        correo,
         password
     } = req.body;
 
@@ -158,11 +158,11 @@ app.post("/registro-recepcion", async (req, res) => {
         const queryPaciente = await pool.request()
             .input('nombres', sql.VarChar(50), nombre)
             .input('apellidos', sql.VarChar(50), apellidos)
-            .input('fecha', sql.Date, fechaNacimiento) 
-            .input('genero', sql.Char(1), genero) 
+            .input('fecha', sql.Date, fechaNacimiento)
+            .input('genero', sql.Char(1), genero)
             .input('tel', sql.VarChar(20), telefono || null)
             .input('correo', sql.VarChar(100), correoLimpio)
-            .input('pass', sql.VarChar(255), password) 
+            .input('pass', sql.VarChar(255), password)
             .query(`
                 INSERT INTO Paciente (Nombres, Apellidos, FechaNacimiento, Genero, Telefono, Correo, Password)
                 OUTPUT INSERTED.IdPaciente
@@ -189,9 +189,9 @@ app.post("/registro-recepcion", async (req, res) => {
 
 // Obtener lista de todos los Pacientes 
 app.get("/usuarios", async (req, res) => {
-     try {
-         const pool = await sql.connect(dbConfig);
-         // Usamos "AS" para que los nombres coincidan con tu frontend
+    try {
+        const pool = await sql.connect(dbConfig);
+        // Usamos "AS" para que los nombres coincidan con tu frontend
         const result = await pool.request().query(`
         SELECT 
             IdPaciente, 
@@ -202,9 +202,9 @@ app.get("/usuarios", async (req, res) => {
             Password AS password 
         FROM Paciente
     `);
-         res.json(result.recordset);
-     } catch (err) {
-         console.error("Error en SELECT:", err);
+        res.json(result.recordset);
+    } catch (err) {
+        console.error("Error en SELECT:", err);
         res.status(500).json({ error: "Error al obtener la lista de pacientes." });
     }
 });
@@ -234,7 +234,7 @@ app.post("/login", async (req, res) => {
 
     try {
         const pool = await sql.connect(dbConfig);
-        
+
         // Buscamos al paciente que coincida con ese correo y contraseña
         const result = await pool.request()
             .input('correo', sql.VarChar(100), correo)
@@ -248,9 +248,9 @@ app.post("/login", async (req, res) => {
         if (result.recordset.length > 0) {
             const usuario = result.recordset[0];
             console.log(`Login exitoso: ${usuario.Nombres} (ID: ${usuario.IdPaciente})`);
-            
-            res.json({ 
-                mensaje: "Inicio de sesión exitoso", 
+
+            res.json({
+                mensaje: "Inicio de sesión exitoso",
                 usuario: {
                     id: usuario.IdPaciente,
                     nombres: usuario.Nombres,
@@ -281,7 +281,7 @@ app.post("/loginDoctor", async (req, res) => {
 
     try {
         const pool = await sql.connect(dbConfig);
-        
+
         // Buscamos al doctor que coincida con ese correo y contraseña
         const result = await pool.request()
             .input('correo', sql.VarChar(100), correo)
@@ -295,9 +295,9 @@ app.post("/loginDoctor", async (req, res) => {
         if (result.recordset.length > 0) {
             const usuario = result.recordset[0];
             console.log(`Login exitoso: ${usuario.Nombres} (ID: ${usuario.IdDoctor})`);
-            
-            res.json({ 
-                mensaje: "Inicio de sesión exitoso", 
+
+            res.json({
+                mensaje: "Inicio de sesión exitoso",
                 usuario: {
                     id: usuario.IdDoctor,
                     nombres: usuario.Nombres,
@@ -316,41 +316,83 @@ app.post("/loginDoctor", async (req, res) => {
     }
 });
 
+app.post("/recuperarPassword", async (req, res) => {
+    const { correo } = req.body;
+
+    if (!correo) {
+        return res.status(400).json({ ok: false, error: "Por favor, ingresa tu correo electrónico." });
+    }
+
+    try {
+        const pool = await sql.connect(dbConfig);
+        const correoLimpio = correo.trim().toLowerCase();
+
+        // Buscamos si el correo existe en la base de datos
+        const result = await pool.request()
+            .input("correo", sql.VarChar(100), correoLimpio)
+            .query(`
+                SELECT IdPaciente, Nombres, Correo 
+                FROM Paciente 
+                WHERE Correo = @correo
+            `);
+
+        // Si no se encontró ningún registro
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ ok: false, error: "El correo ingresado no está registrado." });
+        }
+
+        // Si sí existe, guardamos el usuario encontrado
+        const usuario = result.recordset[0];
+        console.log(`🟢 Correo confirmado para: ${usuario.Nombres}`);
+
+        // Respondemos con un éxito rotundo (200 OK) y un JSON limpio
+        return res.status(200).json({
+            ok: true,
+            mensaje: "Usuario encontrado con éxito.",
+            idPaciente: usuario.IdPaciente
+        });
+
+    } catch (err) {
+        console.error("Error en recuperarPassword:", err.message);
+        return res.status(500).json({ ok: false, error: "Error interno en el servidor." });
+    }
+});
+
 // RUTA PARA LA FOTO DE PERFIL DEL PACIENTE (NUEVO)
 app.post("/actualizarFotoPerfil", async (req, res) => {
     console.log(req.body);
-  const { idPaciente, fotoPerfil } = req.body;
+    const { idPaciente, fotoPerfil } = req.body;
 
-  try {
+    try {
 
-    console.log("Actualizando foto...");
+        console.log("Actualizando foto...");
 
-    const pool = await sql.connect(dbConfig);
+        const pool = await sql.connect(dbConfig);
 
-    await pool.request()
-      .input("idPaciente", sql.Int, idPaciente)
-      .input("fotoPerfil", sql.VarChar, fotoPerfil)
-      .query(`
+        await pool.request()
+            .input("idPaciente", sql.Int, idPaciente)
+            .input("fotoPerfil", sql.VarChar, fotoPerfil)
+            .query(`
         UPDATE Paciente
         SET FotoPerfil = @fotoPerfil
         WHERE IdPaciente = @idPaciente
       `);
 
-      console.log("Foto actualizada");
+        console.log("Foto actualizada");
 
-    res.json({
-      ok: true,
-      mensaje: "Foto actualizada"
-    });
+        res.json({
+            ok: true,
+            mensaje: "Foto actualizada"
+        });
 
-  } catch (error) {
+    } catch (error) {
 
-    console.log(error);
+        console.log(error);
 
-    res.status(500).json({
-      error: "Error actualizando foto"
-    });
-  }
+        res.status(500).json({
+            error: "Error actualizando foto"
+        });
+    }
 });
 
 // RUTA PARA AGENDAR UNA CITA 
@@ -374,8 +416,8 @@ app.post("/agendarCita", async (req, res) => {
             `);
 
         if (checkPaciente.recordset[0].total > 0) {
-            return res.status(409).json({ 
-                error: "Ya tienes otra cita agendada exactamente a esta misma hora." 
+            return res.status(409).json({
+                error: "Ya tienes otra cita agendada exactamente a esta misma hora."
             });
         }
 
@@ -393,19 +435,19 @@ app.post("/agendarCita", async (req, res) => {
             `);
 
         if (checkDoctor.recordset[0].total > 0) {
-            return res.status(409).json({ 
-                error: "El doctor se acaba de ocupar en este horario. Por favor elige otro." 
+            return res.status(409).json({
+                error: "El doctor se acaba de ocupar en este horario. Por favor elige otro."
             });
         }
-        
+
         const result = await pool.request()
-            .input("fecha", sql.VarChar, fecha) 
-            .input("hora", sql.VarChar, hora)   
+            .input("fecha", sql.VarChar, fecha)
+            .input("hora", sql.VarChar, hora)
             .input("idPaciente", sql.Int, idPaciente)
             .input("idDoctor", sql.Int, idDoctor)
             .input("numConsultorio", sql.VarChar(10), numeroConsultorio)
             .input("anticipo", sql.Bit, anticipo ? 1 : 0)
-            .input("estado", sql.VarChar(20), 'Pendiente') 
+            .input("estado", sql.VarChar(20), 'Pendiente')
             .query(`
                 INSERT INTO CitaMedica (Fecha, Hora, IdPaciente, IdDoctor, NumeroConsultorio, Anticipo, Estado)
                 OUTPUT INSERTED.IdCita
@@ -416,12 +458,12 @@ app.post("/agendarCita", async (req, res) => {
         console.log(`Cita agendada con éxito. ID: ${nuevoIdCita}`);
 
         if (io) {
-            io.emit('cita-actualizada'); 
+            io.emit('cita-actualizada');
         }
 
-        res.status(201).json({ 
-            mensaje: "Cita creada correctamente", 
-            idCita: nuevoIdCita 
+        res.status(201).json({
+            mensaje: "Cita creada correctamente",
+            idCita: nuevoIdCita
         });
 
     } catch (err) {
@@ -494,26 +536,26 @@ app.get("/mis-citas/:idPaciente", async (req, res) => {
 
 // Ruta para registrar un nuevo pago (Anticipo o Liquidación)
 app.post("/pagos", async (req, res) => {
-  const { monto, metodoPago, estatus, tipoPago, idCita } = req.body;
+    const { monto, metodoPago, estatus, tipoPago, idCita } = req.body;
 
-  try {
-    const pool = await sql.connect(dbConfig);
-    await pool.request()
-      .input("monto", sql.Money, monto)
-      .input("metodoPago", sql.VarChar, metodoPago)
-      .input("estatus", sql.VarChar, estatus)
-      .input("tipoPago", sql.VarChar, tipoPago)
-      .input("idCita", sql.Int, idCita)
-      .query(`
+    try {
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("monto", sql.Money, monto)
+            .input("metodoPago", sql.VarChar, metodoPago)
+            .input("estatus", sql.VarChar, estatus)
+            .input("tipoPago", sql.VarChar, tipoPago)
+            .input("idCita", sql.Int, idCita)
+            .query(`
         INSERT INTO Pagos (Fecha, Monto, MetodoPago, Estatus, TipoPago, IdCita)
         VALUES (GETDATE(), @monto, @metodoPago, @estatus, @tipoPago, @idCita)
       `);
 
-    res.status(201).json({ message: "Pago registrado correctamente" });
-  } catch (err) {
-    console.error("Error al registrar pago:", err);
-    res.status(500).json({ error: "No se pudo registrar el pago en la base de datos" });
-  }
+        res.status(201).json({ message: "Pago registrado correctamente" });
+    } catch (err) {
+        console.error("Error al registrar pago:", err);
+        res.status(500).json({ error: "No se pudo registrar el pago en la base de datos" });
+    }
 });
 
 app.put("/actualizar-perfil/:id", async (req, res) => {
@@ -915,7 +957,7 @@ io.on("connection", (socket) => {
     socket.on('nueva-cita', () => {
         console.log("Alguien agendó. Avisando a todos los demás dispositivos...");
         // broadcast.emit le envía el mensaje a TODOS menos al que lo mandó
-        socket.broadcast.emit('cita-actualizada'); 
+        socket.broadcast.emit('cita-actualizada');
     });
     socket.on("cita-cancelada", () => {
         console.log("Cita cancelada. Avisando a todos...");
