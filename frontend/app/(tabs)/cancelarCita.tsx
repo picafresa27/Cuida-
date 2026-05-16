@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
+import API_URL from "../../config/api";
 import {
   Alert,
   SafeAreaView,
@@ -17,7 +18,7 @@ export default function CancelarCita() {
   // En un entorno real, este anticipo vendría de la base de datos
   const anticipoPagado = 400; 
 
-  const handleConfirmarCancelacion = () => {
+  const handleConfirmarCancelacion = async() => {
     Alert.alert(
       "Cancelación en proceso",
       "¿Estás seguro de que deseas cancelar esta cita definitivamente?",
@@ -26,11 +27,31 @@ export default function CancelarCita() {
         { 
           text: "Sí, cancelar", 
           style: "destructive", 
-          onPress: () => {
-            console.log("Ejecutando cancelación en BD para la cita:", idCita);
+          onPress: async() => {
+            /*console.log("Ejecutando cancelación en BD para la cita:", idCita);
             // Aquí irá el fetch a tu backend
             Alert.alert("Cita cancelada", "Tu cita ha sido cancelada según la política de Cuida+.");
-            router.push("/(tabs)/misCitas"); // Regresa a la agenda
+            router.push("/(tabs)/misCitas"); // Regresa a la agenda*/
+            try {
+  const res = await fetch(`${API_URL}/cancelar-cita/${idCita}`, {
+  method: "PUT",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+  const data = await res.json();
+
+  if (data.success) {
+    Alert.alert("Cita cancelada", "Tu cita ha sido cancelada correctamente.");
+    router.push("/(tabs)/misCitas");
+  } else {
+    Alert.alert("Error", "No se pudo cancelar la cita.");
+  }
+} catch (error) {
+  console.log(error);
+  Alert.alert("Error", "Error de conexión con el servidor.");
+}
           } 
         },
       ]

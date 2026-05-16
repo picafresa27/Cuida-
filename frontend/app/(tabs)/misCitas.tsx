@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useContext, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -9,15 +9,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { io } from "socket.io-client";
 import API_URL from "../../config/api";
 import { UserContext } from "../../context/userContext";
-
+const socket = io(API_URL);
 export default function misCitas() {
   const { usuario } = useContext(UserContext); 
   const [filtro, setFiltro] = useState("Próximas");
   const [citas, setCitas] = useState([]); 
   const [cargando, setCargando] = useState(true);
   const router = useRouter();
+  
 
   // --- FUNCIÓN PARA FORMATEAR FECHA (Recibe el objeto 'cita' completo) ---
   const formatearCita = (item: any) => {
@@ -79,6 +81,25 @@ export default function misCitas() {
       setCargando(false);
     }
   };
+
+  const socketRef = React.useRef<any>(null);
+
+useEffect(() => {
+  socketRef.current = io(API_URL);
+
+  socketRef.current.on("cita-actualizada", () => {
+    console.log("Cambio en citas detectado (paciente)");
+    obtenerCitas();
+  });
+
+  socketRef.current.on("cita-cancelada", () => {
+    obtenerCitas();
+  });
+
+  return () => {
+    socketRef.current.disconnect();
+  };
+}, []);
 
   useFocusEffect(
     useCallback(() => {

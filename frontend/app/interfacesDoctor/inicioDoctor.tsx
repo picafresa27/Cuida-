@@ -1,8 +1,8 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import { useRouter } from "expo-router";
+import React, { useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import API_URL from "../../config/api";
-
+import { Ionicons } from "@expo/vector-icons";
 import {
   SafeAreaView,
   ScrollView,
@@ -13,22 +13,52 @@ import {
 } from "react-native";
 
 // Configuración del Socket (mismo endpoint, diferente canal si fuera necesario)
-const URL_BACKEND = `${API_URL}/usuarios`;
-const socket = io(URL_BACKEND);
+//const URL_BACKEND = `${API_URL}/usuarios`;
+//const socket = io(URL_BACKEND);
+import { UserContext } from "../../context/userContext";
 
 export default function HomeDoctor() {
-  const { nombre } = useLocalSearchParams();
+  const { usuario } = useContext(UserContext);
   const router = useRouter();
+  const [dashboard, setDashboard] = useState<any>(null);
+
+  const socketRef = React.useRef<any>(null);
+
+  const obtenerDashboard = async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/dashboard-doctor/${usuario?.id}`
+      );
+
+      const data = await response.json();
+      setDashboard(data);
+
+    } catch (error) {
+      console.log("ERROR DASHBOARD:", error);
+    }
+  };
 
   useEffect(() => {
-    socket.on("connect", () => {
-      console.log("🟢 Doctor conectado al servidor. ID:", socket.id);
+    obtenerDashboard();
+  }, []);
+
+  useEffect(() => {
+    socketRef.current = io(API_URL);
+
+    socketRef.current.on("connect", () => {
+      console.log("🟢 Doctor conectado:", socketRef.current.id);
+    });
+
+    socketRef.current.on("cita-actualizada", () => {
+      console.log("📡 Dashboard actualizado en tiempo real");
+      obtenerDashboard(); // 🔥 CLAVE
     });
 
     return () => {
-      socket.disconnect();
+      socketRef.current.disconnect();
     };
   }, []);
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,20 +69,20 @@ export default function HomeDoctor() {
         {/* Encabezado Profesional */}
         <View style={styles.header}>
           <Text style={styles.brand}>Panel Médico Cuida+</Text>
-          <Text style={styles.welcome}>Buen día, Dr. {nombre || "Especialista"}</Text>
+          <Text style={styles.welcome}>Buen día, Dr. {usuario?.nombres || "Especialista"} {usuario?.apellidos}</Text>
           <Text style={styles.subtitle}>
-            Hoy tienes 4 citas programadas y 2 expedientes pendientes de revisión.
+            Hoy tienes {dashboard?.citasHoy || 0} citas programadas.
           </Text>
         </View>
 
         {/* Resumen de Estadísticas Rápidas */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>4</Text>
+            <Text style={styles.statNumber}>{dashboard?.citasHoy || 0}</Text>
             <Text style={styles.statLabel}>Citas Hoy</Text>
           </View>
           <View style={[styles.statCard, { borderColor: '#41A69A' }]}>
-            <Text style={[styles.statNumber, { color: '#41A69A' }]}>28</Text>
+            <Text style={[styles.statNumber, { color: '#41A69A' }]}>{dashboard?.pacientes || 0}</Text>
             <Text style={styles.statLabel}>Pacientes</Text>
           </View>
         </View>
@@ -83,31 +113,63 @@ export default function HomeDoctor() {
 
         {/* Próximo Paciente (Tarjeta enfocada) */}
         <View style={styles.nextPatientCard}>
-          <Text style={styles.sectionLabel}>Siguiente Paciente</Text>
-          <View style={styles.patientInfoRow}>
-            <View>
-              <Text style={styles.patientName}>Yamileth Cota Bueno</Text>
-              <Text style={styles.appointmentTime}>11:00 AM - Consultorio 4</Text>
-              <Text style={styles.reasonText}>Motivo: Seguimiento post-operatorio</Text>
-            </View>
-          </View>
-          
-          <View style={styles.actionButtonsRow}>
-            <TouchableOpacity 
-              style={styles.btnVerExpediente}
-              onPress={() => console.log("Abriendo expediente...")}
-            >
-              <Text style={styles.btnTextAzul}>Ver Expediente</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.btnIniciarConsulta}
-              onPress={() => console.log("Iniciando consulta...")}
-            >
-              <Text style={styles.btnTextBlanco}>Iniciar Consulta</Text>
-            </TouchableOpacity>
-          </View>
+  <Text style={styles.sectionLabel}>Siguiente Paciente</Text>
+
+  {dashboard?.siguientePaciente ? (
+    <>
+      {/* CASO CON PACIENTE */}
+      <View style={styles.patientInfoRow}>
+        <View>
+          <Text style={styles.patientName}>
+            {dashboard.siguientePaciente.Nombres}{" "}
+            {dashboard.siguientePaciente.Apellidos}
+          </Text>
+
+          <Text style={styles.appointmentTime}>
+            {dashboard.siguientePaciente.Hora} - Consultorio{" "}
+            {dashboard.siguientePaciente.NumeroConsultorio}
+          </Text>
         </View>
+      </View>
+
+      <View style={styles.actionButtonsRow}>
+        <TouchableOpacity
+          style={styles.btnVerExpediente}
+          onPress={() => console.log("Abriendo expediente...")}
+        >
+          <Text style={styles.btnTextAzul}>Ver Expediente</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.btnIniciarConsulta}
+          onPress={() => console.log("Iniciando consulta...")}
+        >
+          <Text style={styles.btnTextBlanco}>Iniciar Consulta</Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  ) : (
+    <>
+      {/* CASO SIN PACIENTE (NUEVO DISEÑO) */}
+      <View style={styles.emptyState}>
+        <Ionicons name="calendar-outline" size={34} color="#CBD5E0" style={{ marginBottom: 10 }} />
+        <Text style={styles.emptyTitle}>No tienes pacientes pendientes</Text>
+        <Text style={styles.emptySubtitle}>
+          Todo está al día por ahora
+        </Text>
+
+        <TouchableOpacity
+          style={styles.emptyButton}
+          onPress={() => router.push("../interfacesDoctor/agenda")}
+        >
+          <Text style={styles.emptyButtonText}>
+            Ver agenda completa
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  )}
+</View>
 
         {/* Notificaciones o Pendientes */}
         <View style={styles.pendingSection}>
@@ -313,4 +375,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#4A5568",
   },
+  emptyState: {
+  alignItems: "center",
+  justifyContent: "center",
+  paddingVertical: 30,
+},
+
+emptyIcon: {
+  fontSize: 30,
+  marginBottom: 10,
+},
+
+emptyTitle: {
+  fontSize: 16,
+  fontWeight: "bold",
+  color: "#1A202C",
+  marginBottom: 5,
+},
+
+emptySubtitle: {
+  fontSize: 13,
+  color: "#718096",
+  marginBottom: 15,
+  textAlign: "center",
+},
+
+emptyButton: {
+  backgroundColor: "#345195",
+  paddingVertical: 10,
+  paddingHorizontal: 15,
+  borderRadius: 10,
+},
+
+emptyButtonText: {
+  color: "#fff",
+  fontWeight: "bold",
+  fontSize: 13,
+},
 });

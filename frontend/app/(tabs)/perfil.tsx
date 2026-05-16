@@ -71,20 +71,6 @@ export default function PerfilScreen() {
 
     //console.log("7. URL:", data.secure_url);
 
-    /*await fetch(
-      "https://special-xylophone-695xxpjwwp45hrw74-3000.app.github.dev/actualizarFotoPerfil",
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idPaciente: usuario?.id,
-          fotoPerfil: data.secure_url,
-        }),
-      }
-    );*/
-
     const resBackend = await fetch(
       `${API_URL}/actualizarFotoPerfil`,
   {

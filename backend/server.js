@@ -150,6 +150,7 @@ app.get("/doctores", async (req, res) => {
 
 // RUTA PARA EL LOGIN DEL PACIENTE (NUEVO)
 app.post("/login", async (req, res) => {
+    console.log(req.body);
     const { correo, password } = req.body;
 
     if (!correo || !password) {
@@ -181,6 +182,53 @@ app.post("/login", async (req, res) => {
                     apellidos: usuario.Apellidos,
                     correo: usuario.Correo,
                     fotoPerfil: usuario.FotoPerfil
+                }
+            });
+        } else {
+            console.log(`Intento de login fallido para: ${correo}`);
+            res.status(401).json({ error: "Correo o contraseña incorrectos." });
+        }
+    } catch (err) {
+        console.error("Error en el login:", err);
+        res.status(500).json({ error: "Error en el servidor al intentar iniciar sesión." });
+    }
+});
+
+// RUTA PARA EL LOGIN DEL DOCTOR (NUEVO)
+app.post("/loginDoctor", async (req, res) => {
+
+    console.log(req.body);
+    const { correo, password } = req.body;
+
+    if (!correo || !password) {
+        return res.status(400).json({ error: "Por favor, ingresa correo y contraseña." });
+    }
+
+    try {
+        const pool = await sql.connect(dbConfig);
+        
+        // Buscamos al doctor que coincida con ese correo y contraseña
+        const result = await pool.request()
+            .input('correo', sql.VarChar(100), correo)
+            .input('pass', sql.VarChar(255), password)
+            .query(`
+                SELECT IdDoctor, Nombres, Apellidos, Correo 
+                FROM Doctor 
+                WHERE Correo = @correo AND Password = @pass
+            `);
+
+        if (result.recordset.length > 0) {
+            const usuario = result.recordset[0];
+            console.log(`Login exitoso: ${usuario.Nombres} (ID: ${usuario.IdDoctor})`);
+            
+            res.json({ 
+                mensaje: "Inicio de sesión exitoso", 
+                usuario: {
+                    id: usuario.IdDoctor,
+                    nombres: usuario.Nombres,
+                    apellidos: usuario.Apellidos,
+                    correo: usuario.Correo
+                    //fotoPerfil: usuario.FotoPerfil
                 }
             });
         } else {
@@ -393,27 +441,6 @@ app.post("/pagos", async (req, res) => {
   }
 });
 
-// 3. LÓGICA DE EVENTOS DE SOCKET.IO
-io.on("connection", (socket) => {
-    console.log("Un usuario se ha conectado al socket:", socket.id);
-
-    socket.on('nueva-cita', () => {
-        console.log("Alguien agendó. Avisando a todos los demás dispositivos...");
-        // broadcast.emit le envía el mensaje a TODOS menos al que lo mandó
-        socket.broadcast.emit('cita-actualizada'); 
-    });
-
-    socket.on("disconnect", () => {
-        console.log("Usuario desconectado");
-    });
-});
-
-// 4. ARRANCAR EL SERVIDOR USANDO "server.listen" (NO app.listen)
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Servidor de CuidaPlus corriendo con Sockets en el puerto ${PORT} 🚀`);
-});
-
 app.put("/actualizar-perfil/:id", async (req, res) => {
     const { id } = req.params;
     const { nombre, apellidos, telefono, correo, password } = req.body;
@@ -442,6 +469,68 @@ app.put("/actualizar-perfil/:id", async (req, res) => {
         console.error("Error al actualizar:", err);
         res.status(500).json({ error: err.message });
     }
+});
+//RUTA PARA OBTENER CITAS DEL DOCTOR
+app.get("/citas-doctor/:idDoctor/:fecha", async (req, res) => {
+
+    const { idDoctor, fecha } = req.params;
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request()
+            .input("idDoctor", sql.Int, idDoctor)
+            .input("fecha", sql.Date, fecha)
+            .query(`
+
+                SELECT 
+                    C.IdCita,
+
+                    CONVERT(VARCHAR, C.Fecha, 23) AS Fecha,
+
+                    LEFT(CONVERT(VARCHAR, C.Hora, 108), 5) AS Hora,
+
+                    C.Estado,
+
+                    CASE
+                        WHEN CAST(C.Fecha AS DATE) < CAST(GETDATE() AS DATE)
+                            THEN 'Pasada'
+
+                        WHEN CAST(C.Fecha AS DATE) = CAST(GETDATE() AS DATE)
+                            THEN 'Hoy'
+
+                        ELSE 'Pendiente'
+                    END AS TipoCita,
+
+                    P.Nombres,
+                    P.Apellidos,
+                    P.Correo
+
+                FROM CitaMedica C
+
+                INNER JOIN Paciente P
+                    ON C.IdPaciente = P.IdPaciente
+
+                WHERE C.IdDoctor = @idDoctor
+                AND CAST(C.Fecha AS DATE) = @fecha
+
+                ORDER BY C.Fecha ASC, C.Hora ASC
+
+            `);
+
+        res.json(result.recordset);
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            error: "Error obteniendo citas del doctor"
+        });
+
+    }
+
 });
 
 app.get("/proxima-cita/:idPaciente", async (req, res) => {
@@ -475,4 +564,296 @@ app.get("/proxima-cita/:idPaciente", async (req, res) => {
         console.error(err);
         res.status(500).json({ error: "Error al buscar la próxima cita" });
     }
+});
+
+app.get("/pacientes-doctor/:idDoctor", async (req, res) => {
+
+    const { idDoctor } = req.params;
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request()
+            .input("idDoctor", sql.Int, idDoctor)
+            .query(`
+                SELECT DISTINCT
+    P.IdPaciente,
+    P.Nombres,
+    P.Apellidos,
+    P.Correo,
+    P.Telefono,
+    P.FechaNacimiento,
+
+    DATEDIFF(YEAR, P.FechaNacimiento, GETDATE()) AS Edad,
+
+    P.FotoPerfil,
+
+    CONVERT(VARCHAR, MAX(C.Fecha), 23) AS UltimaConsulta
+
+FROM CitaMedica C
+
+INNER JOIN Paciente P
+    ON C.IdPaciente = P.IdPaciente
+
+WHERE C.IdDoctor = @idDoctor
+
+GROUP BY
+    P.IdPaciente,
+    P.Nombres,
+    P.Apellidos,
+    P.Correo,
+    P.Telefono,
+    P.FechaNacimiento,
+    P.FotoPerfil
+            `);
+
+        res.json(result.recordset);
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            error: "Error obteniendo pacientes"
+        });
+    }
+});
+
+app.get("/dashboard-doctor/:idDoctor", async (req, res) => {
+
+    const { idDoctor } = req.params;
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        // TOTAL CITAS HOY
+        const citasHoy = await pool.request()
+            .input("idDoctor", sql.Int, idDoctor)
+            .query(`
+                SELECT COUNT(*) AS total
+                FROM CitaMedica
+                WHERE IdDoctor = @idDoctor
+                AND CAST(Fecha AS DATE) = CAST(GETDATE() AS DATE)
+            `);
+
+        // TOTAL PACIENTES
+        const pacientes = await pool.request()
+            .input("idDoctor", sql.Int, idDoctor)
+            .query(`
+                SELECT COUNT(DISTINCT IdPaciente) AS total
+                FROM CitaMedica
+                WHERE IdDoctor = @idDoctor
+            `);
+
+        // SIGUIENTE PACIENTE
+        const siguientePaciente = await pool.request()
+            .input("idDoctor", sql.Int, idDoctor)
+            .query(`
+                SELECT TOP 1
+            P.Nombres,
+            P.Apellidos,
+
+            CONVERT(VARCHAR, C.Fecha, 23) AS Fecha,
+
+            LEFT(CONVERT(VARCHAR, C.Hora, 108), 5) AS Hora,
+
+            C.NumeroConsultorio
+
+        FROM CitaMedica C
+
+        INNER JOIN Paciente P
+            ON C.IdPaciente = P.IdPaciente
+
+        WHERE C.IdDoctor = @idDoctor
+        AND C.Estado = 'Pendiente'
+        AND CAST(C.Fecha AS DATE) >= CAST(GETDATE() AS DATE)
+
+        ORDER BY C.Fecha ASC, C.Hora ASC
+            `);
+
+        res.json({
+
+            citasHoy: citasHoy.recordset[0].total,
+
+            pacientes: pacientes.recordset[0].total,
+
+            siguientePaciente:
+                siguientePaciente.recordset.length > 0
+                    ? siguientePaciente.recordset[0]
+                    : null
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            error: "Error obteniendo dashboard del doctor"
+        });
+    }
+});
+
+app.get("/expediente/:idPaciente", async (req, res) => {
+
+    const { idPaciente } = req.params;
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request()
+            .input("idPaciente", sql.Int, idPaciente)
+            .query(`
+                SELECT
+                    NumeroExpediente,
+                    FechaApertura,
+                    Antecedentes,
+                    TipoSangre
+                FROM Expediente
+                WHERE IdPaciente = @idPaciente
+            `);
+
+        res.json(result.recordset);
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            error: "Error obteniendo expediente"
+        });
+    }
+});
+
+app.get("/historial-paciente/:idPaciente/:idDoctor", async (req, res) => {
+
+    const { idPaciente, idDoctor } = req.params;
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request()
+            .input("idPaciente", sql.Int, idPaciente)
+            .input("idDoctor", sql.Int, idDoctor)
+            .query(`
+                SELECT
+                    IdCita,
+
+                    CONVERT(VARCHAR, Fecha, 23) AS Fecha,
+
+                    LEFT(CONVERT(VARCHAR, Hora, 108), 5) AS Hora,
+
+                    Estado
+
+                FROM CitaMedica
+
+                WHERE IdPaciente = @idPaciente AND IdDoctor = @idDoctor
+
+                ORDER BY Fecha DESC, Hora DESC
+            `);
+
+        res.json(result.recordset);
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            error: "Error obteniendo historial"
+        });
+    }
+});
+
+app.get("/detalle-cita/:idCita", async (req, res) => {
+
+    const { idCita } = req.params;
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request()
+            .input("idCita", sql.Int, idCita)
+            .query(`
+                SELECT
+                    Diagnostico,
+                    Tratamiento,
+                    Observaciones
+                FROM ConsultaMedica
+                WHERE IdCita = @idCita
+            `);
+
+        res.json(result.recordset[0] || {});
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            error: "Error obteniendo detalle"
+        });
+
+    }
+
+});
+
+app.put("/cancelar-cita/:idCita", async (req, res) => {
+    const { idCita } = req.params;
+
+    try {
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+            .input("idCita", sql.Int, idCita)
+            .query(`
+                UPDATE CitaMedica
+                SET Estado = 'Cancelada'
+                WHERE IdCita = @idCita
+            `);
+
+        // 🔥 AVISAR A TODOS LOS DISPOSITIVOS
+        io.emit("cita-actualizada");
+
+        // (opcional) evento más específico
+        io.emit("cita-cancelada", { idCita });
+
+        res.json({
+            ok: true,
+            mensaje: "Cita cancelada correctamente"
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            error: "Error cancelando la cita"
+        });
+    }
+});
+
+// 3. LÓGICA DE EVENTOS DE SOCKET.IO
+io.on("connection", (socket) => {
+    console.log("Un usuario se ha conectado al socket:", socket.id);
+
+    socket.on('nueva-cita', () => {
+        console.log("Alguien agendó. Avisando a todos los demás dispositivos...");
+        // broadcast.emit le envía el mensaje a TODOS menos al que lo mandó
+        socket.broadcast.emit('cita-actualizada'); 
+    });
+    socket.on("cita-cancelada", () => {
+        console.log("Cita cancelada. Avisando a todos...");
+        socket.broadcast.emit("cita-actualizada");
+    });
+
+    socket.on("disconnect", () => {
+        console.log("Usuario desconectado");
+    });
+});
+
+// 4. ARRANCAR EL SERVIDOR USANDO "server.listen" (NO app.listen)
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Servidor de CuidaPlus corriendo con Sockets en el puerto ${PORT} 🚀`);
 });

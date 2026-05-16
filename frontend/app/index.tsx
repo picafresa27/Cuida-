@@ -31,7 +31,60 @@ export default function LoginScreen() {
       Alert.alert("Error", "Completa todos los campos");
       return;
     }
+    const correoUsuario = email.toLowerCase();
 
+      if (correoUsuario.endsWith("@cuidaplus.com")) {
+        try {
+      const res = await fetch(
+        `${API_URL}/loginDoctor`,
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            correo: email,
+            password: password,
+          }),
+        }
+      );
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+
+      console.log("STATUS:", res.status);
+      console.log("RESPUESTA:", data);
+
+      if (!res.ok) {
+        Alert.alert("Error", data.error || "No se pudo iniciar sesión");
+        return;
+      }
+
+      console.log("Datos recibidos del backend:", data.usuario);
+
+      console.log("Guardando ID en el contexto:", data.usuario.id);
+
+      Alert.alert("Éxito", "Inicio de sesión exitoso");
+
+      router.replace({
+        pathname: "../interfacesDoctor/inicioDoctor",
+        params: {
+          nombre: data.usuario.nombres,
+        },
+      });
+
+      // Guardar usuario globalmente
+      setUsuario(data.usuario);
+
+    } catch (error) {
+      
+      Alert.alert(
+        "Error",
+        "No se pudo conectar al servidor"
+      );
+      console.log("Error login:", error);
+    }
+      }else{
     try {
       const res = await fetch(
         `${API_URL}/login`,
@@ -50,6 +103,9 @@ export default function LoginScreen() {
       const text = await res.text();
       const data = text ? JSON.parse(text) : {};
 
+      console.log("STATUS:", res.status);
+      console.log("RESPUESTA:", data);
+
       if (!res.ok) {
         Alert.alert("Error", data.error || "No se pudo iniciar sesión");
         return;
@@ -61,26 +117,15 @@ export default function LoginScreen() {
 
       Alert.alert("Éxito", "Inicio de sesión exitoso");
 
-      /*router.replace({
+      router.replace({
         pathname: "/(tabs)",
         params: {
           nombre: data.usuario.nombres,
         },
-      });*/
+      });
 
       // Guardar usuario globalmente
       setUsuario(data.usuario);
-
-      const correoUsuario = email.toLowerCase();
-
-      if (correoUsuario.endsWith("@cuidaplus.com")) {
-        // Si el correo termina en @cuida+.com, va a la interfaz de doctor
-        // Asegúrate de tener creada la carpeta app/(doctor)
-        router.replace("../interfacesDoctor/inicioDoctor");
-      } else {
-        // Si es un correo normal, va a la interfaz de paciente (tabs)
-        router.replace("/(tabs)");
-      }
 
     } catch (error) {
       console.log("Error login:", error);
@@ -90,6 +135,7 @@ export default function LoginScreen() {
         "No se pudo conectar al servidor"
       );
     }
+  }
   };
 
   return (
