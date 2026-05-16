@@ -73,7 +73,7 @@ export default function LoginScreen() {
 
       const correoUsuario = email.toLowerCase();
 
-      if (correoUsuario.startsWith("rec") && correoUsuario.endsWith("@cuidaplus.com")) {
+      if (correoUsuario.startsWith("rec.") && correoUsuario.endsWith("@cuidaplus.com")) {
         // Si el correo termina en @cuida+.com, va a la interfaz de doctor
         // Asegúrate de tener creada la carpeta app/(doctor)
         router.replace("../interfacesRecepcion/app/(tabs)");
