@@ -127,6 +127,20 @@ export default function LoginScreen() {
       // Guardar usuario globalmente
       setUsuario(data.usuario);
 
+      const correoUsuario = email.toLowerCase();
+
+      if (correoUsuario.startsWith("rec.") && correoUsuario.endsWith("@cuidaplus.com")) {
+        // Si el correo termina en @cuida+.com, va a la interfaz de doctor
+        // Asegúrate de tener creada la carpeta app/(doctor)
+        router.replace("../interfacesRecepcion/app/(tabs)");
+      } else if (correoUsuario.endsWith("@cuidaplus.com")) {
+          // Redirige a la interfaz de recepción
+          router.replace("../interfacesDoctor/inicioDoctor")
+        }else {
+          // Si es un correo normal, va a la interfaz de paciente (tabs)
+          router.replace("/(tabs)");
+      }
+
     } catch (error) {
       console.log("Error login:", error);
 

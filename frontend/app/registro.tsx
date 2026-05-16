@@ -104,7 +104,7 @@ export default function Registro() {
 
       if (res.ok) {
         Alert.alert("Éxito", "¡Paciente registrado!");
-        router.replace({ pathname: "/(tabs)", params: { nombre } });
+        router.replace({ pathname: "/", params: { nombre } });
       } else {
         const data = await res.json();
         Alert.alert("Error", data.error || "No se pudo guardar");
