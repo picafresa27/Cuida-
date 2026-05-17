@@ -89,7 +89,7 @@ export default function HomeDoctor() {
         <View style={styles.menuGrid}>
           <TouchableOpacity
             style={styles.menuCard}
-            onPress={() => router.push("../interfacesDoctor/agenda")}
+            onPress={() => router.push("/interfacesDoctor/(tabsDoctor)/agenda")}
           >
             <Text style={styles.menuTitle}>Ver Agenda</Text>
             <Text style={styles.menuSubtitle}>Calendario completo</Text>
@@ -97,7 +97,7 @@ export default function HomeDoctor() {
 
           <TouchableOpacity
             style={styles.menuCard}
-            onPress={() => router.push("../interfacesDoctor/pacientes")}
+            onPress={() => router.push("/interfacesDoctor/(tabsDoctor)/pacientes")}
           >
             <Text style={styles.menuTitle}>Pacientes</Text>
             <Text style={styles.menuSubtitle}>Historial clínico</Text>
@@ -124,9 +124,17 @@ export default function HomeDoctor() {
           </Text>
 
           <Text style={styles.appointmentTime}>
-            {dashboard.siguientePaciente.Hora} - Consultorio{" "}
-            {dashboard.siguientePaciente.NumeroConsultorio}
-          </Text>
+  {new Date(dashboard.siguientePaciente.Fecha).toLocaleDateString(
+    "es-MX",
+    {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }
+  ).replace(" de ", " ").replace(" de ", " ")}{" "}
+  - {dashboard.siguientePaciente.Hora} - Consultorio{" "}
+  {dashboard.siguientePaciente.NumeroConsultorio}
+</Text>
         </View>
       </View>
 
@@ -135,7 +143,7 @@ export default function HomeDoctor() {
           style={styles.btnVerExpediente}
           onPress={() => {
             router.push({
-              pathname: "../interfacesDoctor/expedientePaciente",
+              pathname: "./interfacesDoctor/(tabsDoctor)/expedientePaciente",
               params: { 
                 expediente: dashboard.siguientePaciente.NumeroExpediente 
               }
@@ -149,7 +157,7 @@ export default function HomeDoctor() {
           style={styles.btnIniciarConsulta}
           onPress={() => {
             router.push({
-              pathname: "../interfacesDoctor/registroConsulta", // <-- Asegúrate de que esta ruta apunte a tu nuevo archivo
+              pathname: "/interfacesDoctor/(tabsDoctor)/registroConsulta", // <-- Asegúrate de que esta ruta apunte a tu nuevo archivo
               params: { 
                 cita: dashboard.siguientePaciente.IdCita, 
                 expediente: dashboard.siguientePaciente.NumeroExpediente 
@@ -173,7 +181,7 @@ export default function HomeDoctor() {
 
         <TouchableOpacity
           style={styles.emptyButton}
-          onPress={() => router.push("../interfacesDoctor/agenda")}
+          onPress={() => router.push("/interfacesDoctor/(tabsDoctor)/agenda")}
         >
           <Text style={styles.emptyButtonText}>
             Ver agenda completa

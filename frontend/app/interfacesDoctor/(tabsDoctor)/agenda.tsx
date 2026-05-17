@@ -155,6 +155,9 @@ const cancelarCita = async (idCita: number) => {
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+  canceladoPor: "Doctor"
+})
       }
     );
 
@@ -484,7 +487,7 @@ const confirmarCancelacion = (idCita: number) => {
 
   </View>
 
-  <TouchableOpacity
+  {/* <TouchableOpacity
     style={styles.botonIniciarConsulta}
     onPress={() =>
       atenderPaciente(
@@ -492,17 +495,24 @@ const confirmarCancelacion = (idCita: number) => {
         evento.numeroExpediente
       )
     }
-  >
+  > */}
+
+  <TouchableOpacity
+  style={styles.botonDetallesCita}
+  onPress={() =>
+    abrirDetalleCita(evento.citaCompleta)
+  }
+>
 
     <Text style={styles.botonIniciarConsultaText}>
-      Iniciar Consulta
-    </Text>
+  Detalles de cita
+</Text>
 
-    <Ionicons
-      name="arrow-forward"
-      size={16}
-      color="#FFFFFF"
-    />
+<Ionicons
+  name="document-text-outline"
+  size={16}
+  color="#FFFFFF"
+/>
 
   </TouchableOpacity>
 
@@ -627,20 +637,43 @@ const confirmarCancelacion = (idCita: number) => {
 
           )}
 
-          {citaSeleccionada.TipoCita !== "Pasada" && (
+          {citaSeleccionada.TipoCita !== "Pasada" &&
+ citaSeleccionada.Estado !== "Cancelada" && (
 
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => confirmarCancelacion(citaSeleccionada.IdCita)}
-            >
+  <>
 
-              <Text style={styles.cancelButtonText}>
-                Cancelar cita
-              </Text>
+    <TouchableOpacity
+      style={styles.startConsultationButton}
+      onPress={() =>
+        atenderPaciente(
+          citaSeleccionada.IdCita,
+          citaSeleccionada.NumeroExpediente
+        )
+      }
+    >
 
-            </TouchableOpacity>
+      <Text style={styles.startConsultationButtonText}>
+        Iniciar consulta
+      </Text>
 
-          )}
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={styles.cancelButton}
+      onPress={() =>
+        confirmarCancelacion(citaSeleccionada.IdCita)
+      }
+    >
+
+      <Text style={styles.cancelButtonText}>
+        Cancelar cita
+      </Text>
+
+    </TouchableOpacity>
+
+  </>
+
+)}
 
           <TouchableOpacity
             style={styles.closeBtn}
@@ -820,7 +853,7 @@ const styles = StyleSheet.create({
   tarjetaCitaTitulo: { fontFamily: 'Montserrat', fontSize: 15, fontWeight: '700', color: '#1F2937' },
   tarjetaCitaDetalle: { fontFamily: 'Montserrat', fontSize: 13, color: '#6B7280', marginTop: 2 },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+ // modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 28, padding: 24, alignItems: 'center', maxHeight: '85%' },
   modalTitulo: { fontFamily: 'Montserrat', fontSize: 20, fontWeight: '700', color: '#1F2937', marginBottom: 4, textAlign: 'center' },
   modalSubtitulo: { fontFamily: 'Montserrat', fontSize: 13, color: '#6B7280', marginBottom: 20, textAlign: 'center' },
@@ -844,19 +877,19 @@ botonIniciarConsulta: { backgroundColor: '#3FB099', flexDirection: 'row', alignI
   calendarioHeaderModal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   calendarioModalTitulo: { fontFamily: 'Montserrat', fontSize: 16, fontWeight: '700', color: '#1F2937' },
   calendarioCardFormulario: { borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', padding: 4, width: '100%' },
-  detailModal: {
+  /*detailModal: {
   backgroundColor: "#FFF",
   borderRadius: 20,
   padding: 20,
-},
+},*/
 
-detailTitle: {
+/*detailTitle: {
   fontSize: 22,
   fontWeight: "bold",
   color: "#1A202C",
-},
+},*/
 
-detailSubtitle: {
+/*detailSubtitle: {
   color: "#718096",
   marginBottom: 20,
 },
@@ -924,5 +957,152 @@ closeBtnText: {
   color: "#FFF",
   fontWeight: "bold",
   fontSize: 14,
+},*/
+
+
+
+
+
+
+
+modalOverlay: {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.45)",
+  justifyContent: "center",
+  alignItems: "center",
+  paddingHorizontal: 20,
+},
+
+detailModal: {
+  width: "100%",
+  maxHeight: "85%",
+  backgroundColor: "#FFFFFF",
+  borderRadius: 28,
+  padding: 24,
+  shadowColor: "#000",
+  shadowOffset: {
+    width: 0,
+    height: 6,
+  },
+  shadowOpacity: 0.15,
+  shadowRadius: 12,
+  elevation: 10,
+},
+
+detailTitle: {
+  fontSize: 26,
+  fontWeight: "700",
+  color: "#1F2937",
+  marginBottom: 4,
+  fontFamily: "Montserrat",
+},
+
+detailSubtitle: {
+  fontSize: 14,
+  color: "#6B7280",
+  marginBottom: 24,
+  fontFamily: "Montserrat",
+},
+
+detailBox: {
+  backgroundColor: "#F9FAFB",
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 14,
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+},
+
+detailLabel: {
+  fontSize: 13,
+  fontWeight: "700",
+  color: "#345195",
+  marginBottom: 6,
+  fontFamily: "Montserrat",
+},
+
+detailValue: {
+  fontSize: 15,
+  color: "#1F2937",
+  fontFamily: "Montserrat",
+},
+
+sectionTitle: {
+  fontSize: 20,
+  fontWeight: "700",
+  color: "#1F2937",
+  marginTop: 12,
+  marginBottom: 14,
+  fontFamily: "Montserrat",
+},
+
+historyItem: {
+  backgroundColor: "#F8FAFC",
+  padding: 18,
+  borderRadius: 18,
+  borderWidth: 1,
+  borderColor: "#E2E8F0",
+  marginBottom: 10,
+},
+
+historyDiag: {
+  fontSize: 14,
+  color: "#374151",
+  marginBottom: 10,
+  lineHeight: 22,
+  fontFamily: "Montserrat",
+},
+
+cancelButton: {
+  backgroundColor: "#DC2626",
+  paddingVertical: 16,
+  borderRadius: 14,
+  alignItems: "center",
+  marginTop: 24,
+},
+
+cancelButtonText: {
+  color: "#FFFFFF",
+  fontWeight: "700",
+  fontSize: 15,
+  fontFamily: "Montserrat",
+},
+
+closeBtn: {
+  backgroundColor: "#6B7280",
+  paddingVertical: 15,
+  borderRadius: 14,
+  alignItems: "center",
+  marginTop: 12,
+},
+
+closeBtnText: {
+  color: "#FFFFFF",
+  fontWeight: "700",
+  fontSize: 15,
+  fontFamily: "Montserrat",
+},
+startConsultationButton: {
+  backgroundColor: "#3FB099",
+  paddingVertical: 16,
+  borderRadius: 14,
+  alignItems: "center",
+  marginTop: 24,
+},
+
+startConsultationButtonText: {
+  color: "#FFFFFF",
+  fontWeight: "700",
+  fontSize: 15,
+  fontFamily: "Montserrat",
+},
+botonDetallesCita: {
+  backgroundColor: "#345195",
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  paddingVertical: 10,
+  borderRadius: 10,
+  marginTop: 12,
 },
 });

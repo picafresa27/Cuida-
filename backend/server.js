@@ -745,21 +745,89 @@ app.get("/proxima-cita/:idPaciente", async (req, res) => {
     }
 });
 
+app.get("/pacientes-doctor/:idDoctor", async (req, res) => {
+
+    const { idDoctor } = req.params;
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request()
+            .input("idDoctor", sql.Int, idDoctor)
+            .query(`
+                SELECT DISTINCT
+    P.IdPaciente,
+    P.Nombres,
+    P.Apellidos,
+    P.Correo,
+    P.Telefono,
+    P.FechaNacimiento,
+
+    DATEDIFF(YEAR, P.FechaNacimiento, GETDATE()) AS Edad,
+
+    P.FotoPerfil,
+
+    CONVERT(VARCHAR, MAX(C.Fecha), 23) AS UltimaConsulta
+
+FROM CitaMedica C
+
+INNER JOIN Paciente P
+    ON C.IdPaciente = P.IdPaciente
+
+WHERE C.IdDoctor = @idDoctor
+
+GROUP BY
+    P.IdPaciente,
+    P.Nombres,
+    P.Apellidos,
+    P.Correo,
+    P.Telefono,
+    P.FechaNacimiento,
+    P.FotoPerfil
+            `);
+
+        res.json(result.recordset);
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            error: "Error obteniendo pacientes"
+        });
+    }
+});
+
 app.get("/dashboard-doctor/:idDoctor", async (req, res) => {
     const { idDoctor } = req.params;
 
     try {
         const pool = await sql.connect(dbConfig);
 
+        await pool.request().query(`
+            UPDATE CitaMedica
+            SET Estado = 'No Llego'
+            WHERE Estado = 'Pendiente'
+            AND CAST(
+                CONCAT(
+                    CONVERT(VARCHAR, Fecha, 23),
+                    ' ',
+                    CONVERT(VARCHAR, Hora, 108)
+                ) AS DATETIME
+            ) < DATEADD(MINUTE, -15, SWITCHOFFSET(SYSDATETIMEOFFSET(), '-06:00'))
+        `);
+
         // 1. TOTAL CITAS HOY (Corregido con SWITCHOFFSET para evadir el horario UTC de Azure)
         const citasHoy = await pool.request()
-            .input("idDoctor", sql.Int, idDoctor)
-            .query(`
-                SELECT COUNT(*) AS total
-                FROM CitaMedica
-                WHERE IdDoctor = @idDoctor
-                AND CAST(Fecha AS DATE) = CAST(SWITCHOFFSET(SYSDATETIMEOFFSET(), '-06:00') AS DATE)
-            `);
+    .input("idDoctor", sql.Int, idDoctor)
+    .query(`
+        SELECT COUNT(*) AS total
+        FROM CitaMedica
+        WHERE IdDoctor = @idDoctor
+        AND CONVERT(date, Fecha) = CONVERT(date, SWITCHOFFSET(SYSDATETIMEOFFSET(), '-06:00'))
+        AND Estado = 'Pendiente'
+    `);
 
         // 2. TOTAL PACIENTES
         const pacientes = await pool.request()
@@ -789,7 +857,7 @@ app.get("/dashboard-doctor/:idDoctor", async (req, res) => {
                     ON P.IdPaciente = E.IdPaciente
                 WHERE C.IdDoctor = @idDoctor
                 AND C.Estado = 'Pendiente'
-                AND CAST(C.Fecha AS DATE) >= CAST(SWITCHOFFSET(SYSDATETIMEOFFSET(), '-06:00') AS DATE)
+                AND C.Fecha >= CONVERT(date, SWITCHOFFSET(SYSDATETIMEOFFSET(), '-06:00'))
                 ORDER BY C.Fecha ASC, C.Hora ASC
             `);
 
@@ -897,7 +965,7 @@ app.get("/detalle-cita/:idCita", async (req, res) => {
                     Diagnostico,
                     Tratamiento,
                     Observaciones
-                FROM ConsultaMedica
+                FROM Consulta
                 WHERE IdCita = @idCita
             `);
 
@@ -916,36 +984,102 @@ app.get("/detalle-cita/:idCita", async (req, res) => {
 });
 
 app.put("/cancelar-cita/:idCita", async (req, res) => {
-    const { idCita } = req.params;
+  const { idCita } = req.params;
+  const { canceladoPor } = req.body;
 
-    try {
-        const pool = await sql.connect(dbConfig);
+  try {
+    const pool = await sql.connect(dbConfig);
 
-        await pool.request()
-            .input("idCita", sql.Int, idCita)
-            .query(`
-                UPDATE CitaMedica
-                SET Estado = 'Cancelada'
-                WHERE IdCita = @idCita
-            `);
+    // 🔹 Obtener fecha de cita
+    const citaResult = await pool.request()
+      .input("idCita", sql.Int, idCita)
+      .query(`
+        SELECT 
+  DATEADD(SECOND, DATEDIFF(SECOND, '00:00:00', Hora), CAST(Fecha AS DATETIME)) AS FechaHora
+FROM CitaMedica
+WHERE IdCita = @idCita
+      `);
 
-        // 🔥 AVISAR A TODOS LOS DISPOSITIVOS
-        io.emit("cita-actualizada");
+    const fechaCita = new Date(citaResult.recordset[0].FechaHora);
+    const ahora = new Date();
 
-        // (opcional) evento más específico
-        io.emit("cita-cancelada", { idCita });
+    const diferenciaHoras = (fechaCita - ahora) / (1000 * 60 * 60);
+    const aplicaReembolso = diferenciaHoras > 24;
 
-        res.json({
-            ok: true,
-            mensaje: "Cita cancelada correctamente"
-        });
+    // 🔹 1. Cancelar cita
+    await pool.request()
+      .input("idCita", sql.Int, idCita)
+      .query(`
+        UPDATE CitaMedica
+        SET Estado = 'Cancelada'
+        WHERE IdCita = @idCita
+      `);
 
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            error: "Error cancelando la cita"
-        });
+    // 🔹 2. Registrar cancelación
+    const cancelacionResult = await pool.request()
+      .input("idCita", sql.Int, idCita)
+      .input("canceladoPor", sql.VarChar, canceladoPor)
+    .input("aplicaReembolso", sql.Bit, aplicaReembolso)
+      .query(`
+        INSERT INTO Cancelacion (
+          FechaHora,
+          QuienCancela,
+          EstatusReembolso,
+          AplicaReembolso,
+          IdCita
+        )
+        OUTPUT INSERTED.IdCancelacion
+        VALUES (
+          GETDATE(),
+          @canceladoPor,
+          'Completado',
+          @aplicaReembolso,
+          @idCita
+        )
+      `);
+
+    const idCancelacion = cancelacionResult.recordset[0].IdCancelacion;
+
+    // 🔹 3. SOLO si aplica reembolso
+    if (aplicaReembolso) {
+      await pool.request()
+        .input("idCancelacion", sql.Int, idCancelacion)
+        .query(`
+          INSERT INTO Reembolso (
+            Monto,
+            Fecha,
+            Hora,
+            Motivo,
+            MetodoPago,
+            Estatus,
+            IdCancelacion
+          )
+          VALUES (
+            400,
+            CAST(GETDATE() AS DATE),
+            CAST(GETDATE() AS TIME),
+            'Cancelación dentro de política de reembolso',
+            'Tarjeta',
+            'Completado',
+            @idCancelacion
+          )
+        `);
     }
+
+    // 🔥 SOCKETS
+    io.emit("cita-actualizada");
+    io.emit("cita-cancelada", { idCita });
+
+    res.json({
+      ok: true,
+      mensaje: "Cancelación registrada correctamente",
+      aplicaReembolso
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Error cancelando la cita" });
+  }
 });
 
 // 3. LÓGICA DE EVENTOS DE SOCKET.IO

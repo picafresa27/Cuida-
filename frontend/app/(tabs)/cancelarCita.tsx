@@ -1,6 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
-import API_URL from "../../config/api";
 import {
   Alert,
   SafeAreaView,
@@ -10,15 +9,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import API_URL from "../../config/api";
 
 export default function CancelarCita() {
   const router = useRouter();
-  const { idCita, doctor, fecha } = useLocalSearchParams();
+  //const { idCita, doctor, fecha } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const idCita = Number(params.idCita);
+  const doctor = params.doctor;
+  const fecha = params.fecha;
 
   // En un entorno real, este anticipo vendría de la base de datos
   const anticipoPagado = 400; 
 
   const handleConfirmarCancelacion = async() => {
+    
     Alert.alert(
       "Cancelación en proceso",
       "¿Estás seguro de que deseas cancelar esta cita definitivamente?",
@@ -38,11 +43,14 @@ export default function CancelarCita() {
   headers: {
     "Content-Type": "application/json",
   },
+  body: JSON.stringify({
+    canceladoPor: "Paciente" // o "Doctor"
+  })
 });
 
   const data = await res.json();
-
-  if (data.success) {
+  //console.log(data);
+  if (res.ok) {
     Alert.alert("Cita cancelada", "Tu cita ha sido cancelada correctamente.");
     router.push("/(tabs)/misCitas");
   } else {

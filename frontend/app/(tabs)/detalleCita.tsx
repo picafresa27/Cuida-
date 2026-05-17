@@ -12,7 +12,7 @@ import {
 export default function DetalleCita() {
   const router = useRouter();
   const { idCita, doctor, especialidad, fecha, estado } = useLocalSearchParams();
-
+  console.log("DETALLE CITA ID:", idCita);
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>

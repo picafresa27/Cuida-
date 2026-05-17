@@ -193,6 +193,7 @@ useEffect(() => {
                   router.push({
                     pathname: "/(tabs)/detalleCita", 
                     params: { 
+                      idCita: cita.IdCita,
                       doctor: `Dr. ${cita.nombreDoctor} ${cita.apellidosDoctor}`, 
                       especialidad: cita.Especialidad,
                       fecha: fechaFormateada,
