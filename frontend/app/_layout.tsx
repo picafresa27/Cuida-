@@ -1,21 +1,31 @@
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import { useContext, useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 // 1. Importamos SafeAreaView además de SafeAreaProvider
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { UserProvider, UserContext } from '../context/userContext';
+import { UserContext, UserProvider } from '../context/userContext';
 
 function AuthGuard() {
   const { usuario } = useContext(UserContext);
   const segments = useSegments();
   const router = useRouter();
+  
+  // 1. Agregamos el estado de navegación
+  const navigationState = useRootNavigationState();
 
   useEffect(() => {
+    // 2. Le decimos que se detenga si la navegación aún no está lista
+    if (!navigationState?.key) return;
+
     const estaEnRutaProtegida = segments[0] === "(tabs)";
+    
     if (!usuario && estaEnRutaProtegida) {
-      router.replace("/inicioSesion");
+      // Le damos 100 milisegundos a Expo para que termine de armar el Stack en el iPhone
+      setTimeout(() => {
+        router.replace("/inicioSesion");
+      }, 100);
     }
-  }, [usuario, segments]);
+  }, [usuario, segments, navigationState]); // 3. Agregamos navigationState aquí
 
   return (
     // 3. Este SafeAreaView global añade de forma automática los márgenes

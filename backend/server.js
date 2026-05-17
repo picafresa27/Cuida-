@@ -439,20 +439,21 @@ app.post("/agendarCita", async (req, res) => {
                 error: "El doctor se acaba de ocupar en este horario. Por favor elige otro."
             });
         }
-
+        console.log("DATOS RECIBIDOS EN EL BACKEND:", req.body);
         const result = await pool.request()
-            .input("fecha", sql.VarChar, fecha)
-            .input("hora", sql.VarChar, hora)
-            .input("idPaciente", sql.Int, idPaciente)
-            .input("idDoctor", sql.Int, idDoctor)
-            .input("numConsultorio", sql.VarChar(10), numeroConsultorio)
-            .input("anticipo", sql.Bit, anticipo ? 1 : 0)
-            .input("estado", sql.VarChar(20), 'Pendiente')
-            .query(`
-                INSERT INTO CitaMedica (Fecha, Hora, IdPaciente, IdDoctor, NumeroConsultorio, Anticipo, Estado)
-                OUTPUT INSERTED.IdCita
-                VALUES (@fecha, @hora, @idPaciente, @idDoctor, @numConsultorio, @anticipo, @estado)
-            `);
+        .input("fecha", sql.VarChar, fecha)
+        .input("hora", sql.VarChar, hora)
+        .input("estado", sql.VarChar(20), 'Pendiente')
+        .input("anticipo", sql.Bit, anticipo ? 1 : 0)
+        .input("idpaciente", sql.Int, idPaciente)
+        .input("iddoctor", sql.Int, idDoctor)
+        .input("numeroconsultorio", sql.VarChar(10), numeroConsultorio) // <-- Todo en minúsculas aquí
+        .query(`
+            INSERT INTO CitaMedica (Fecha, Hora, Estado, Anticipo, IdPaciente, IdDoctor, NumeroConsultorio) 
+            VALUES (@fecha, @hora, @estado, @anticipo, @idpaciente, @iddoctor, @numeroconsultorio); -- <-- Y todo en minúsculas aquí
+
+            SELECT SCOPE_IDENTITY() AS IdCita;
+        `);
 
         const nuevoIdCita = result.recordset[0].IdCita;
         console.log(`Cita agendada con éxito. ID: ${nuevoIdCita}`);
@@ -683,79 +684,23 @@ app.get("/proxima-cita/:idPaciente", async (req, res) => {
     }
 });
 
-app.get("/pacientes-doctor/:idDoctor", async (req, res) => {
-
-    const { idDoctor } = req.params;
-
-    try {
-
-        const pool = await sql.connect(dbConfig);
-
-        const result = await pool.request()
-            .input("idDoctor", sql.Int, idDoctor)
-            .query(`
-                SELECT DISTINCT
-    P.IdPaciente,
-    P.Nombres,
-    P.Apellidos,
-    P.Correo,
-    P.Telefono,
-    P.FechaNacimiento,
-
-    DATEDIFF(YEAR, P.FechaNacimiento, GETDATE()) AS Edad,
-
-    P.FotoPerfil,
-
-    CONVERT(VARCHAR, MAX(C.Fecha), 23) AS UltimaConsulta
-
-FROM CitaMedica C
-
-INNER JOIN Paciente P
-    ON C.IdPaciente = P.IdPaciente
-
-WHERE C.IdDoctor = @idDoctor
-
-GROUP BY
-    P.IdPaciente,
-    P.Nombres,
-    P.Apellidos,
-    P.Correo,
-    P.Telefono,
-    P.FechaNacimiento,
-    P.FotoPerfil
-            `);
-
-        res.json(result.recordset);
-
-    } catch (error) {
-
-        console.log(error);
-
-        res.status(500).json({
-            error: "Error obteniendo pacientes"
-        });
-    }
-});
-
 app.get("/dashboard-doctor/:idDoctor", async (req, res) => {
-
     const { idDoctor } = req.params;
 
     try {
-
         const pool = await sql.connect(dbConfig);
 
-        // TOTAL CITAS HOY
+        // 1. TOTAL CITAS HOY (Corregido con SWITCHOFFSET para evadir el horario UTC de Azure)
         const citasHoy = await pool.request()
             .input("idDoctor", sql.Int, idDoctor)
             .query(`
                 SELECT COUNT(*) AS total
                 FROM CitaMedica
                 WHERE IdDoctor = @idDoctor
-                AND CAST(Fecha AS DATE) = CAST(GETDATE() AS DATE)
+                AND CAST(Fecha AS DATE) = CAST(SWITCHOFFSET(SYSDATETIMEOFFSET(), '-06:00') AS DATE)
             `);
 
-        // TOTAL PACIENTES
+        // 2. TOTAL PACIENTES
         const pacientes = await pool.request()
             .input("idDoctor", sql.Int, idDoctor)
             .query(`
@@ -764,38 +709,32 @@ app.get("/dashboard-doctor/:idDoctor", async (req, res) => {
                 WHERE IdDoctor = @idDoctor
             `);
 
-        // SIGUIENTE PACIENTE
+        // 3. SIGUIENTE PACIENTE (Agregado IdCita, NumeroExpediente y fix de Zona Horaria)
         const siguientePaciente = await pool.request()
             .input("idDoctor", sql.Int, idDoctor)
             .query(`
                 SELECT TOP 1
-            P.Nombres,
-            P.Apellidos,
-
-            CONVERT(VARCHAR, C.Fecha, 23) AS Fecha,
-
-            LEFT(CONVERT(VARCHAR, C.Hora, 108), 5) AS Hora,
-
-            C.NumeroConsultorio
-
-        FROM CitaMedica C
-
-        INNER JOIN Paciente P
-            ON C.IdPaciente = P.IdPaciente
-
-        WHERE C.IdDoctor = @idDoctor
-        AND C.Estado = 'Pendiente'
-        AND CAST(C.Fecha AS DATE) >= CAST(GETDATE() AS DATE)
-
-        ORDER BY C.Fecha ASC, C.Hora ASC
+                    C.IdCita,                     -- 👈 ¡Indispensable para iniciar la consulta!
+                    P.Nombres,
+                    P.Apellidos,
+                    CONVERT(VARCHAR, C.Fecha, 23) AS Fecha,
+                    LEFT(CONVERT(VARCHAR, C.Hora, 108), 5) AS Hora,
+                    C.NumeroConsultorio,
+                    E.NumeroExpediente            -- 👈 ¡Para que funcione tu botón de Ver Expediente!
+                FROM CitaMedica C
+                INNER JOIN Paciente P 
+                    ON C.IdPaciente = P.IdPaciente
+                LEFT JOIN Expediente E            -- 👈 Unimos la tabla de expedientes
+                    ON P.IdPaciente = E.IdPaciente
+                WHERE C.IdDoctor = @idDoctor
+                AND C.Estado = 'Pendiente'
+                AND CAST(C.Fecha AS DATE) >= CAST(SWITCHOFFSET(SYSDATETIMEOFFSET(), '-06:00') AS DATE)
+                ORDER BY C.Fecha ASC, C.Hora ASC
             `);
 
         res.json({
-
             citasHoy: citasHoy.recordset[0].total,
-
             pacientes: pacientes.recordset[0].total,
-
             siguientePaciente:
                 siguientePaciente.recordset.length > 0
                     ? siguientePaciente.recordset[0]
@@ -803,9 +742,7 @@ app.get("/dashboard-doctor/:idDoctor", async (req, res) => {
         });
 
     } catch (error) {
-
         console.log(error);
-
         res.status(500).json({
             error: "Error obteniendo dashboard del doctor"
         });
