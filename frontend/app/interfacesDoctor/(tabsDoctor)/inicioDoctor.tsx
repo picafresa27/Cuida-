@@ -133,14 +133,29 @@ export default function HomeDoctor() {
       <View style={styles.actionButtonsRow}>
         <TouchableOpacity
           style={styles.btnVerExpediente}
-          onPress={() => console.log("Abriendo expediente...")}
+          onPress={() => {
+            router.push({
+              pathname: "../interfacesDoctor/expedientePaciente",
+              params: { 
+                expediente: dashboard.siguientePaciente.NumeroExpediente 
+              }
+            });
+          }}
         >
           <Text style={styles.btnTextAzul}>Ver Expediente</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.btnIniciarConsulta}
-          onPress={() => console.log("Iniciando consulta...")}
+          onPress={() => {
+            router.push({
+              pathname: "../interfacesDoctor/registroConsulta", // <-- Asegúrate de que esta ruta apunte a tu nuevo archivo
+              params: { 
+                cita: dashboard.siguientePaciente.IdCita, 
+                expediente: dashboard.siguientePaciente.NumeroExpediente 
+              }
+            });
+          }}
         >
           <Text style={styles.btnTextBlanco}>Iniciar Consulta</Text>
         </TouchableOpacity>

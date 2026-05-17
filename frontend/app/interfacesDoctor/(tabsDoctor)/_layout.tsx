@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { useSegments, useRouter, useRootNavigationState } from "expo-router";
 
 export default function DoctorTabsLayout() {
   return (
@@ -25,7 +26,7 @@ export default function DoctorTabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="inicioDoctor" // O "index" si decidiste renombrarlo
+        name="inicioDoctor"
         options={{
           title: 'Inicio',
           tabBarIcon: ({ color, focused }) => (
@@ -54,9 +55,9 @@ export default function DoctorTabsLayout() {
         }}
       />
 
-      {/* 👈 REVISA QUE ESTA SECCIÓN ESTÉ EXACTAMENTE ASÍ */}
+      {/* 👈 CORREGIDO: Ahora dice "perfilDoc" para que coincida con tu archivo */}
       <Tabs.Screen
-        name="perfil"
+        name="perfilDoc"
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color, focused }) => (
@@ -64,6 +65,28 @@ export default function DoctorTabsLayout() {
           ),
         }}
       />
+
+      {/* 👈 NUEVO: Registra la pantalla de consulta pero la oculta del menú de abajo */}
+      <Tabs.Screen
+        name="registroConsulta"
+        options={{
+          href: null, // Esto hace que no salga el botón en la barra
+        }}
+      />
+
+      <Tabs.Screen
+        name="expedientePaciente"
+        options={{
+          href: null, // Lo oculta de la barra de navegación inferior
+        }}
+      />
     </Tabs>
   );
+
+  <Tabs.Screen
+        name="expedientePaciente"
+        options={{
+          href: null, // Lo oculta de la barra de navegación inferior
+        }}
+      />
 }

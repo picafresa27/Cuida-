@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import React, { useContext, useEffect, useState } from "react";
 import {
   Alert,
@@ -25,13 +26,17 @@ LocaleConfig.defaultLocale = 'es';
 
 // Tipado rápido para claridad del flujo
 interface EventoAgenda {
+  idCita?: number;
   tipo: 'bloqueo' | 'cita';
   titulo: string;
   detalle: string;
   hora?: string;
+  numeroExpediente?: number;
 }
 
 export default function Agenda() {
+  const navigation = useNavigation<any>();
+  
   // Modales y Controles
   const [modalBloqueoVisible, setModalBloqueoVisible] = useState(false);
   const [modalCalendarioVisible, setModalCalendarioVisible] = useState(false);
@@ -44,12 +49,7 @@ export default function Agenda() {
   const [diaSeleccionadoPantalla, setDiaSeleccionadoPantalla] = useState('2026-05-16');
 
   // ESTADO UNIFICADO DE EVENTOS (Bloqueos y Citas)
-  const [eventosAgenda, setEventosAgenda] = useState<any>({});
-  /*const [eventosAgenda, setEventosAgenda] = useState<{ [key: string]: EventoAgenda }>({
-    '2026-05-19': { tipo: 'bloqueo', titulo: 'Horario Bloqueado', detalle: 'Motivo: Consulta Externa' },
-    '2026-05-20': { tipo: 'cita', titulo: 'Cita: Carlos Mendoza', detalle: 'Pediatría - 10:00 AM', hora: '10:00 AM' },
-    '2026-05-22': { tipo: 'cita', titulo: 'Cita: Diana Peralta', detalle: 'Control General - 04:30 PM', hora: '04:30 PM' }
-  });*/
+  const [eventosAgenda, setEventosAgenda] = useState<{[key: string]: EventoAgenda[];}>({});
 
   // Estado temporal para el Calendario del Formulario de Bloqueo
   const [fechaInicio, setFechaInicio] = useState<string | null>(null);
@@ -81,10 +81,12 @@ export default function Agenda() {
 
       eventosTransformados[cita.Fecha].push({
         tipo: "cita",
-        titulo: `${cita.Nombres} ${cita.Apellidos}`,
-        detalle: `${cita.Estado} - ${cita.Hora}`,
-        hora: cita.Hora,
-        citaCompleta: cita
+  titulo: `${cita.Nombres} ${cita.Apellidos}`,
+  detalle: `${cita.Estado} - ${cita.Hora}`,
+  hora: cita.Hora,
+  citaCompleta: cita,
+  idCita: cita.IdCita,
+  numeroExpediente: cita.NumeroExpediente
       });
 
     });
@@ -328,6 +330,12 @@ const confirmarCancelacion = (idCita: number) => {
     return marcas;
   };
 
+
+
+  const atenderPaciente = (idCita?: number, numeroExpediente?: number) => {
+    navigation.navigate('registroConsulta', { cita: idCita, expediente: numeroExpediente });
+  };
+
   //const eventoDelDiaActual = eventosAgenda[diaSeleccionadoPantalla];
   const eventosDelDiaActual = eventosAgenda[diaSeleccionadoPantalla] || [];
 
@@ -433,47 +441,72 @@ const confirmarCancelacion = (idCita: number) => {
     ) : (
 
       <TouchableOpacity
-        key={index}
-        style={styles.tarjetaCitaMedica}
-        onPress={() =>
-          abrirDetalleCita(evento.citaCompleta)
-        }
-      >
+  key={index}
+  style={styles.tarjetaCitaMedica}
+  onPress={() =>
+    abrirDetalleCita(evento.citaCompleta)
+  }
+>
 
-        <View style={styles.tarjetaCitaIconoContenedor}>
+  <View
+    style={{
+      flexDirection: "row",
+      alignItems: "center",
+    }}
+  >
 
-          <Ionicons
-            name="person"
-            size={18}
-            color="#3FB099"
-          />
+    <View style={styles.tarjetaCitaIconoContenedor}>
 
-        </View>
+      <Ionicons
+        name="person"
+        size={18}
+        color="#3FB099"
+      />
 
-        <View
-          style={{
-            flex: 1,
-            marginLeft: 12,
-          }}
-        >
+    </View>
 
-          <Text style={styles.tarjetaCitaTitulo}>
-            {evento.titulo}
-          </Text>
+    <View
+      style={{
+        flex: 1,
+        marginLeft: 12,
+      }}
+    >
 
-          <Text style={styles.tarjetaCitaDetalle}>
-            {evento.detalle}
-          </Text>
+      <Text style={styles.tarjetaCitaTitulo}>
+        {evento.titulo}
+      </Text>
 
-        </View>
+      <Text style={styles.tarjetaCitaDetalle}>
+        {evento.detalle}
+      </Text>
 
-        <Ionicons
-          name="chevron-forward"
-          size={18}
-          color="#9CA3AF"
-        />
+    </View>
 
-      </TouchableOpacity>
+  </View>
+
+  <TouchableOpacity
+    style={styles.botonIniciarConsulta}
+    onPress={() =>
+      atenderPaciente(
+        evento.idCita,
+        evento.numeroExpediente
+      )
+    }
+  >
+
+    <Text style={styles.botonIniciarConsultaText}>
+      Iniciar Consulta
+    </Text>
+
+    <Ionicons
+      name="arrow-forward"
+      size={16}
+      color="#FFFFFF"
+    />
+
+  </TouchableOpacity>
+
+</TouchableOpacity>
 
     )
 
@@ -782,7 +815,7 @@ const styles = StyleSheet.create({
   botonEliminarBloqueo: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
 
   // NUEVO: Tarjeta Cita Médica (Identidad Cuida+)
-  tarjetaCitaMedica: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, marginTop: 4, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.02, shadowRadius: 2, elevation: 1 },
+  tarjetaCitaMedica: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, marginTop: 4, flexDirection: 'column', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.02, shadowRadius: 2, elevation: 1 },
   tarjetaCitaIconoContenedor: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#E6F4F1', justifyContent: 'center', alignItems: 'center' },
   tarjetaCitaTitulo: { fontFamily: 'Montserrat', fontSize: 15, fontWeight: '700', color: '#1F2937' },
   tarjetaCitaDetalle: { fontFamily: 'Montserrat', fontSize: 13, color: '#6B7280', marginTop: 2 },
@@ -804,7 +837,8 @@ const styles = StyleSheet.create({
   botonConfirmarText: { fontFamily: 'Montserrat', fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   botonVolver: { width: '100%', paddingVertical: 10, alignItems: 'center' },
   botonVolverText: { fontFamily: 'Montserrat', fontSize: 14, fontWeight: '600', color: '#6B7280' },
-
+botonIniciarConsulta: { backgroundColor: '#3FB099', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10, marginTop: 12 },
+  botonIniciarConsultaText: { fontFamily: 'Montserrat', fontSize: 14, fontWeight: '700', color: '#FFFFFF', marginRight: 4 },
   calendarioModalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.3)', justifyContent: 'flex-end' },
   calendarioModalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
   calendarioHeaderModal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },

@@ -21,6 +21,8 @@ export default function AgendarCita() {
   const router = useRouter();
   const { idDoctor, nombre, apellidos, especialidad } = useLocalSearchParams();
 
+  const consultorioSeleccionado = Number(idDoctor) === 2 ? "201-S" : "101-N";
+  
   // --- CONFIGURACIÓN DE FECHA ---
   const ahora = new Date();
   const diaActual = ahora.getDate();
@@ -107,13 +109,13 @@ export default function AgendarCita() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fecha: fechaDB,
-          hora: `${selectedTime}:00`,
-          idPaciente: usuario?.id, 
-          idDoctor: Number(idDoctor),
-          numeroConsultorio: "4", 
-          anticipo: true,
-        }),
+        fecha: fechaDB,
+        hora: `${selectedTime}:00`,
+        idPaciente: usuario?.id, 
+        idDoctor: Number(idDoctor),
+        numeroConsultorio: consultorioSeleccionado, // 👈 Usa tu variable dinámica aquí (sin comillas)
+        anticipo: true,
+      }),
       });
 
       // Si el servidor detecta que alguien más ganó el lugar
