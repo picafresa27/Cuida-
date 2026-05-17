@@ -3,7 +3,7 @@ import { useContext, useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 // 1. Importamos SafeAreaView además de SafeAreaProvider
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { UserProvider, UserContext } from '../context/userContext';
+import { UserContext, UserProvider } from '../context/userContext';
 
 function AuthGuard() {
   const { usuario } = useContext(UserContext);

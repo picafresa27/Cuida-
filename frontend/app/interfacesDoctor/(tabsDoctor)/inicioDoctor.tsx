@@ -12,7 +12,6 @@ import {
 import { io } from "socket.io-client";
 import API_URL from "../../../config/api";
 import { UserContext } from "../../../context/userContext";
-
 // Configuración del Socket (mismo endpoint, diferente canal si fuera necesario)
 //const URL_BACKEND = `${API_URL}/usuarios`;
 //const socket = io(URL_BACKEND);

@@ -3,7 +3,8 @@ import { Link, useRouter } from "expo-router";
 import { useContext, useState } from "react";
 import {
   Alert,
-  Image,
+  Image, // 1. Importamos para poder cerrar el teclado al picar fuera
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,9 +12,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
-  TouchableWithoutFeedback, // 1. Importamos para poder cerrar el teclado al picar fuera
-  Keyboard,                // 2. Importamos el gestor del teclado
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import API_URL from "../config/api";
@@ -23,18 +23,46 @@ export default function LoginScreen() {
   const router = useRouter();
   const { setUsuario } = useContext(UserContext);
 
-  const [email, setEmail] = useState("");
+  const [identificador, setIdentificador] = useState("");
   const [password, setPassword] = useState("");
   const [verPassword, setVerPassword] = useState(true);
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!identificador || !password) {
       Alert.alert("Error", "Completa todos los campos");
       return;
     }
-    const correoUsuario = email.toLowerCase();
+    const identificadorLimpio = identificador.toLowerCase();
 
-    if (correoUsuario.endsWith("@cuidaplus.com")) {
+    if (identificadorLimpio.startsWith("rec.") && identificadorLimpio.endsWith("@cuidaplus.com")) {
+      try {
+        const res = await fetch(`${API_URL}/loginRecepcionista`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ identificador: identificadorLimpio, password: password}),
+        });
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
+
+        if (!res.ok) {
+          Alert.alert("Error", data.error || "No se pudo iniciar sesión");
+          return;
+        }
+
+        Alert.alert("Éxito", "Inicio de sesión exitoso");
+        router.replace({
+          pathname: "../interfacesRecepcion/app/(tabs)",
+          params: { nombre: data.usuario.nombres },
+        });
+        setUsuario(data.usuario);
+      } catch (error) {
+        Alert.alert("Error", "No se pudo conectar al servidor");
+        console.log("Error login:", error);
+      }
+    } else if(identificadorLimpio.endsWith("@cuidaplus.com")){
       try {
         const res = await fetch(`${API_URL}/loginDoctor`, {
           method: "POST",
@@ -42,7 +70,7 @@ export default function LoginScreen() {
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ correo: email, password: password }),
+          body: JSON.stringify({ identificador: identificadorLimpio, password: password }),
         });
         const text = await res.text();
         const data = text ? JSON.parse(text) : {};
@@ -62,7 +90,7 @@ export default function LoginScreen() {
         Alert.alert("Error", "No se pudo conectar al servidor");
         console.log("Error login:", error);
       }
-    } else {
+    }else{
       try {
         const res = await fetch(`${API_URL}/login`, {
           method: "POST",
@@ -70,7 +98,7 @@ export default function LoginScreen() {
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ correo: email, password: password }),
+          body: JSON.stringify({ identificador: identificadorLimpio, password: password }),
         });
         const text = await res.text();
         const data = text ? JSON.parse(text) : {};
@@ -81,15 +109,12 @@ export default function LoginScreen() {
         }
 
         Alert.alert("Éxito", "Inicio de sesión exitoso");
+        router.replace({
+          pathname: "/(tabs)",
+          params: { nombre: data.usuario.nombres },
+        });
         setUsuario(data.usuario);
-
-        if (correoUsuario.startsWith("rec.") && correoUsuario.endsWith("@cuidaplus.com")) {
-          router.replace("../interfacesRecepcion/app/(tabs)");
-        } else if (correoUsuario.endsWith("@cuidaplus.com")) {
-          router.replace("../interfacesDoctor/inicioDoctor");
-        } else {
-          router.replace("/(tabs)");
-        }
+        
       } catch (error) {
         console.log("Error login:", error);
         Alert.alert("Error", "No se pudo conectar al servidor");
@@ -127,15 +152,15 @@ export default function LoginScreen() {
             <View style={styles.form}>
               {/* Input Correo */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Correo electrónico</Text>
+                <Text style={styles.label}>Correo electrónico / Telefono</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="correo@gmail.com"
                   placeholderTextColor="#A0AEC0"
-                  keyboardType="email-address"
+                  keyboardType="default"
                   autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
+                  value={identificador}
+                  onChangeText={setIdentificador}
                 />
               </View>
 
@@ -184,7 +209,7 @@ export default function LoginScreen() {
               {/* Link de Olvidé contraseña */}
               <TouchableOpacity 
                 style={styles.forgotPass}
-                onPress={() => router.push('/recuperarContra')}
+                onPress={() => router.push('../recuperarContra')}
               >
                 <Text style={styles.textoForgot}>¿Olvidaste tu contraseña?</Text>
               </TouchableOpacity>

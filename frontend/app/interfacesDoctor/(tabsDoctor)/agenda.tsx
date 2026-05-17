@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Modal, 
+import { Ionicons } from '@expo/vector-icons';
+import React, { useContext, useEffect, useState } from "react";
+import {
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
-  Alert 
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { Ionicons } from '@expo/vector-icons'; 
+import { io } from "socket.io-client";
+import API_URL from "../../../config/api";
+import { UserContext } from "../../../context/userContext";
 
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
@@ -41,16 +44,145 @@ export default function Agenda() {
   const [diaSeleccionadoPantalla, setDiaSeleccionadoPantalla] = useState('2026-05-16');
 
   // ESTADO UNIFICADO DE EVENTOS (Bloqueos y Citas)
-  const [eventosAgenda, setEventosAgenda] = useState<{ [key: string]: EventoAgenda }>({
+  const [eventosAgenda, setEventosAgenda] = useState<any>({});
+  /*const [eventosAgenda, setEventosAgenda] = useState<{ [key: string]: EventoAgenda }>({
     '2026-05-19': { tipo: 'bloqueo', titulo: 'Horario Bloqueado', detalle: 'Motivo: Consulta Externa' },
     '2026-05-20': { tipo: 'cita', titulo: 'Cita: Carlos Mendoza', detalle: 'Pediatría - 10:00 AM', hora: '10:00 AM' },
     '2026-05-22': { tipo: 'cita', titulo: 'Cita: Diana Peralta', detalle: 'Control General - 04:30 PM', hora: '04:30 PM' }
-  });
+  });*/
 
   // Estado temporal para el Calendario del Formulario de Bloqueo
   const [fechaInicio, setFechaInicio] = useState<string | null>(null);
   const [fechaFin, setFechaFin] = useState<string | null>(null);
   const [periodoMarcadoFormulario, setPeriodoMarcadoFormulario] = useState<any>({});
+  const [citaSeleccionada, setCitaSeleccionada] = useState<any>(null);
+  const [detalleCita, setDetalleCita] = useState<any>(null);
+
+  const { usuario } = useContext(UserContext);
+  const socket = io(API_URL);
+
+  const obtenerCitas = async () => {
+
+  try {
+
+    const response = await fetch(
+      `${API_URL}/citas-doctor/${usuario?.id}/${diaSeleccionadoPantalla}`
+    );
+
+    const data = await response.json();
+
+    let eventosTransformados: any = {};
+
+    data.forEach((cita: any) => {
+
+      if (!eventosTransformados[cita.Fecha]) {
+        eventosTransformados[cita.Fecha] = [];
+      }
+
+      eventosTransformados[cita.Fecha].push({
+        tipo: "cita",
+        titulo: `${cita.Nombres} ${cita.Apellidos}`,
+        detalle: `${cita.Estado} - ${cita.Hora}`,
+        hora: cita.Hora,
+        citaCompleta: cita
+      });
+
+    });
+
+    setEventosAgenda((prev: any) => ({
+      ...prev,
+      ...eventosTransformados
+    }));
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
+};
+
+const abrirDetalleCita = async (cita: any) => {
+
+  setCitaSeleccionada(cita);
+
+  try {
+
+    const response = await fetch(
+      `${API_URL}/detalle-cita/${cita.IdCita}`
+    );
+
+    const data = await response.json();
+
+    setDetalleCita(data);
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
+
+};
+
+useEffect(() => {
+  obtenerCitas();
+}, [diaSeleccionadoPantalla]);
+
+useEffect(() => {
+
+  socket.on("cita-actualizada", () => {
+    obtenerCitas();
+  });
+
+  socket.on("cita-cancelada", () => {
+    obtenerCitas();
+  });
+
+  return () => {
+    socket.off("cita-actualizada");
+    socket.off("cita-cancelada");
+  };
+
+}, [diaSeleccionadoPantalla]);
+
+const cancelarCita = async (idCita: number) => {
+  try {
+    const response = await fetch(
+      `${API_URL}/cancelar-cita/${idCita}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.ok) {
+      obtenerCitas();
+      setCitaSeleccionada(null);
+      setDetalleCita(null);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const confirmarCancelacion = (idCita: number) => {
+  Alert.alert(
+    "Cancelar cita",
+    "¿Estás seguro de que deseas cancelar esta cita?",
+    [
+      {
+        text: "No",
+        style: "cancel",
+      },
+      {
+        text: "Sí, cancelar",
+        style: "destructive",
+        onPress: () => cancelarCita(idCita),
+      },
+    ]
+  );
+};
 
   // Lógica de Selección de Rango en el Formulario
   const manejarSeleccionRangoBloqueo = (dia: any) => {
@@ -101,22 +233,26 @@ export default function Agenda() {
     const motivoFinal = motivo.trim() || 'Horario Bloqueado';
 
     if (tipoBloqueo === 'horas' || !fechaFin) {
-      nuevosEventos[fechaInicio] = { 
-        tipo: 'bloqueo', 
-        titulo: 'Horario Bloqueado', 
-        detalle: `Motivo: ${motivoFinal}` 
-      };
+      nuevosEventos[fechaInicio] = [
+  {
+    tipo: 'bloqueo',
+    titulo: 'Horario Bloqueado',
+    detalle: `Motivo: ${motivoFinal}`
+  }
+];
     } else {
       let fechaActual = new Date(fechaInicio + 'T00:00:00');
       const fechaLimite = new Date(fechaFin + 'T00:00:00');
 
       while (fechaActual <= fechaLimite) {
         const stringFormateado = fechaActual.toISOString().split('T')[0];
-        nuevosEventos[stringFormateado] = { 
-          tipo: 'bloqueo', 
-          titulo: 'Horario Bloqueado', 
-          detalle: `Motivo: ${motivoFinal}` 
-        };
+        nuevosEventos[stringFormateado] = [
+  {
+    tipo: 'bloqueo',
+    titulo: 'Horario Bloqueado',
+    detalle: `Motivo: ${motivoFinal}`
+  }
+];
         fechaActual.setDate(fechaActual.getDate() + 1);
       }
     }
@@ -156,7 +292,7 @@ export default function Agenda() {
     let marcas: any = {};
 
     Object.keys(eventosAgenda).forEach((fecha) => {
-      const infoEvento = eventosAgenda[fecha];
+      const infoEvento = eventosAgenda[fecha][0];
       
       if (infoEvento.tipo === 'bloqueo') {
         // Estilo sutil de bloqueo administrativo
@@ -192,7 +328,8 @@ export default function Agenda() {
     return marcas;
   };
 
-  const eventoDelDiaActual = eventosAgenda[diaSeleccionadoPantalla];
+  //const eventoDelDiaActual = eventosAgenda[diaSeleccionadoPantalla];
+  const eventosDelDiaActual = eventosAgenda[diaSeleccionadoPantalla] || [];
 
   return (
     <View style={styles.container}>
@@ -241,50 +378,263 @@ export default function Agenda() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-          {eventoDelDiaActual ? (
-            eventoDelDiaActual.tipo === 'bloqueo' ? (
-              /* Bloqueo Administrativo */
-              <View style={styles.tarjetaBloqueoActivo}>
-                <View style={styles.tarjetaBloqueoContenidoIzquierda}>
-                  <View style={styles.tarjetaBloqueoHeader}>
-                    <Ionicons name="lock-closed" size={16} color="#345195" />
-                    <Text style={styles.tarjetaBloqueoTitulo}>{eventoDelDiaActual.titulo}</Text>
-                  </View>
-                  <Text style={styles.tarjetaBloqueoMotivo}>{eventoDelDiaActual.detalle}</Text>
-                </View>
+          {eventosDelDiaActual.length > 0 ? (
 
-                <TouchableOpacity 
-                  style={styles.botonEliminarBloqueo}
-                  onPress={() => solicitarConfirmacionEliminar(diaSeleccionadoPantalla)}
-                  activeOpacity={0.6}
-                >
-                  <Ionicons name="trash-outline" size={18} color="#4B5563" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              /* Cita Médica de Cuida+ */
-              <View style={styles.tarjetaCitaMedica}>
-                <View style={styles.tarjetaCitaIconoContenedor}>
-                  <Ionicons name="person" size={18} color="#3FB099" />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={styles.tarjetaCitaTitulo}>{eventoDelDiaActual.titulo}</Text>
-                  <Text style={styles.tarjetaCitaDetalle}>{eventoDelDiaActual.detalle}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-              </View>
+  eventosDelDiaActual.map((evento: any, index: number) => (
+
+    evento.tipo === "bloqueo" ? (
+
+      <View
+        key={index}
+        style={styles.tarjetaBloqueoActivo}
+      >
+
+        <View style={styles.tarjetaBloqueoContenidoIzquierda}>
+
+          <View style={styles.tarjetaBloqueoHeader}>
+
+            <Ionicons
+              name="lock-closed"
+              size={16}
+              color="#345195"
+            />
+
+            <Text style={styles.tarjetaBloqueoTitulo}>
+              {evento.titulo}
+            </Text>
+
+          </View>
+
+          <Text style={styles.tarjetaBloqueoMotivo}>
+            {evento.detalle}
+          </Text>
+
+        </View>
+
+        <TouchableOpacity
+          style={styles.botonEliminarBloqueo}
+          onPress={() =>
+            solicitarConfirmacionEliminar(
+              diaSeleccionadoPantalla
             )
-          ) : (
-            /* Placeholder por defecto */
-            <View style={styles.citasVaciasContainer}>
-              <Ionicons name="calendar-clear-outline" size={32} color="#D1D5DB" />
-              <Text style={styles.citasVaciasTexto}>
-                No hay citas programadas ni bloqueos para este día.
-              </Text>
-            </View>
-          )}
+          }
+        >
+
+          <Ionicons
+            name="trash-outline"
+            size={18}
+            color="#4B5563"
+          />
+
+        </TouchableOpacity>
+
+      </View>
+
+    ) : (
+
+      <TouchableOpacity
+        key={index}
+        style={styles.tarjetaCitaMedica}
+        onPress={() =>
+          abrirDetalleCita(evento.citaCompleta)
+        }
+      >
+
+        <View style={styles.tarjetaCitaIconoContenedor}>
+
+          <Ionicons
+            name="person"
+            size={18}
+            color="#3FB099"
+          />
+
+        </View>
+
+        <View
+          style={{
+            flex: 1,
+            marginLeft: 12,
+          }}
+        >
+
+          <Text style={styles.tarjetaCitaTitulo}>
+            {evento.titulo}
+          </Text>
+
+          <Text style={styles.tarjetaCitaDetalle}>
+            {evento.detalle}
+          </Text>
+
+        </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color="#9CA3AF"
+        />
+
+      </TouchableOpacity>
+
+    )
+
+  ))
+
+) : (
+
+  <View style={styles.citasVaciasContainer}>
+
+    <Ionicons
+      name="calendar-clear-outline"
+      size={32}
+      color="#D1D5DB"
+    />
+
+    <Text style={styles.citasVaciasTexto}>
+      No hay citas programadas ni bloqueos para este día.
+    </Text>
+
+  </View>
+
+)}
         </ScrollView>
       </View>
+      
+      <Modal
+  visible={!!citaSeleccionada}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={() => {
+    setCitaSeleccionada(null);
+    setDetalleCita(null);
+  }}
+>
+
+  <View style={styles.modalOverlay}>
+
+    <View style={styles.detailModal}>
+
+      {citaSeleccionada && (
+
+        <>
+
+          <Text style={styles.detailTitle}>
+            {citaSeleccionada.Nombres}{" "}
+            {citaSeleccionada.Apellidos}
+          </Text>
+
+          <Text style={styles.detailSubtitle}>
+            {citaSeleccionada.Fecha} ·{" "}
+            {citaSeleccionada.Hora}
+          </Text>
+
+          <View style={styles.detailBox}>
+
+            <Text style={styles.detailLabel}>
+              Estado
+            </Text>
+
+            <Text style={styles.detailValue}>
+              {citaSeleccionada.Estado}
+            </Text>
+
+          </View>
+
+          <View style={styles.detailBox}>
+
+            <Text style={styles.detailLabel}>
+              Consultorio
+            </Text>
+
+            <Text style={styles.detailValue}>
+              {citaSeleccionada.NumeroConsultorio || "--"}
+            </Text>
+
+          </View>
+
+          {citaSeleccionada.TipoCita === "Pasada" && (
+
+            <>
+
+              <Text style={styles.sectionTitle}>
+                Expediente médico
+              </Text>
+
+              <View style={styles.historyItem}>
+
+                <Text style={styles.historyDiag}>
+                  Diagnóstico:
+                </Text>
+
+                <Text style={styles.historyDiag}>
+                  {detalleCita?.Diagnostico ||
+                    "Sin diagnóstico"}
+                </Text>
+
+                <Text style={styles.historyDiag}>
+                  Tratamiento:
+                </Text>
+
+                <Text style={styles.historyDiag}>
+                  {detalleCita?.Tratamiento ||
+                    "Sin tratamiento"}
+                </Text>
+
+                <Text style={styles.historyDiag}>
+                  Observaciones:
+                </Text>
+
+                <Text style={styles.historyDiag}>
+                  {detalleCita?.Observaciones ||
+                    "Sin observaciones"}
+                </Text>
+
+              </View>
+
+            </>
+
+          )}
+
+          {citaSeleccionada.TipoCita !== "Pasada" && (
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => confirmarCancelacion(citaSeleccionada.IdCita)}
+            >
+
+              <Text style={styles.cancelButtonText}>
+                Cancelar cita
+              </Text>
+
+            </TouchableOpacity>
+
+          )}
+
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={() => {
+
+              setCitaSeleccionada(null);
+
+              setDetalleCita(null);
+
+            }}
+          >
+
+            <Text style={styles.closeBtnText}>
+              Cerrar
+            </Text>
+
+          </TouchableOpacity>
+
+        </>
+
+      )}
+
+    </View>
+
+  </View>
+
+</Modal>
 
       {/* MODAL PRINCIPAL: FORMULARIO DE BLOQUEO */}
       <Modal
@@ -459,5 +809,86 @@ const styles = StyleSheet.create({
   calendarioModalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
   calendarioHeaderModal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   calendarioModalTitulo: { fontFamily: 'Montserrat', fontSize: 16, fontWeight: '700', color: '#1F2937' },
-  calendarioCardFormulario: { borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', padding: 4, width: '100%' }
+  calendarioCardFormulario: { borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', padding: 4, width: '100%' },
+  detailModal: {
+  backgroundColor: "#FFF",
+  borderRadius: 20,
+  padding: 20,
+},
+
+detailTitle: {
+  fontSize: 22,
+  fontWeight: "bold",
+  color: "#1A202C",
+},
+
+detailSubtitle: {
+  color: "#718096",
+  marginBottom: 20,
+},
+
+detailBox: {
+  marginBottom: 15,
+},
+
+detailLabel: {
+  fontWeight: "bold",
+  color: "#345195",
+},
+
+detailValue: {
+  color: "#2D3748",
+  marginTop: 3,
+},
+
+cancelButton: {
+  backgroundColor: "#E53E3E",
+  paddingVertical: 15,
+  borderRadius: 12,
+  alignItems: "center",
+  marginTop: 20,
+},
+
+cancelButtonText: {
+  color: "#FFF",
+  fontWeight: "bold",
+},
+
+sectionTitle: {
+  fontSize: 18,
+  fontWeight: "bold",
+  color: "#1A202C",
+  marginTop: 15,
+  marginBottom: 10,
+},
+
+historyItem: {
+  backgroundColor: "#F7FAFC",
+  padding: 15,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "#E2E8F0",
+  marginBottom: 10,
+},
+
+historyDiag: {
+  fontSize: 14,
+  color: "#2D3748",
+  marginBottom: 6,
+  lineHeight: 20,
+},
+
+closeBtn: {
+  backgroundColor: "#718096",
+  paddingVertical: 12,
+  borderRadius: 12,
+  alignItems: "center",
+  marginTop: 10,
+},
+
+closeBtnText: {
+  color: "#FFF",
+  fontWeight: "bold",
+  fontSize: 14,
+},
 });

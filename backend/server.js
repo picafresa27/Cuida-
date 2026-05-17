@@ -226,10 +226,10 @@ app.get("/doctores", async (req, res) => {
 // RUTA PARA EL LOGIN DEL PACIENTE (NUEVO)
 app.post("/login", async (req, res) => {
     console.log(req.body);
-    const { correo, password } = req.body;
+    const { identificador, password } = req.body;
 
-    if (!correo || !password) {
-        return res.status(400).json({ error: "Por favor, ingresa correo y contraseña." });
+    if (!identificador || !password) {
+        return res.status(400).json({ error: "Por favor, ingresa correo/telefono y contraseña." });
     }
 
     try {
@@ -237,12 +237,17 @@ app.post("/login", async (req, res) => {
 
         // Buscamos al paciente que coincida con ese correo y contraseña
         const result = await pool.request()
-            .input('correo', sql.VarChar(100), correo)
+            .input("identificador", sql.VarChar(100), identificador)
             .input('pass', sql.VarChar(255), password)
             .query(`
                 SELECT IdPaciente, Nombres, Apellidos, Correo, FotoPerfil 
                 FROM Paciente 
-                WHERE Correo = @correo AND Password = @pass
+                WHERE
+                (
+                    LOWER(Correo) = LOWER(@identificador)
+                    OR Telefono = @identificador
+                )
+                AND Password = @pass
             `);
 
         if (result.recordset.length > 0) {
@@ -260,8 +265,8 @@ app.post("/login", async (req, res) => {
                 }
             });
         } else {
-            console.log(`Intento de login fallido para: ${correo}`);
-            res.status(401).json({ error: "Correo o contraseña incorrectos." });
+            console.log(`Intento de login fallido para: ${identificador}`);
+            res.status(401).json({ error: "Correo/Telefono o contraseña incorrectos." });
         }
     } catch (err) {
         console.error("Error en el login:", err);
@@ -273,10 +278,10 @@ app.post("/login", async (req, res) => {
 app.post("/loginDoctor", async (req, res) => {
 
     console.log(req.body);
-    const { correo, password } = req.body;
+    const { identificador, password } = req.body;
 
-    if (!correo || !password) {
-        return res.status(400).json({ error: "Por favor, ingresa correo y contraseña." });
+    if (!identificador || !password) {
+        return res.status(400).json({ error: "Por favor, ingresa correo/telefono y contraseña." });
     }
 
     try {
@@ -284,12 +289,17 @@ app.post("/loginDoctor", async (req, res) => {
 
         // Buscamos al doctor que coincida con ese correo y contraseña
         const result = await pool.request()
-            .input('correo', sql.VarChar(100), correo)
+            .input("identificador", sql.VarChar(100), identificador)
             .input('pass', sql.VarChar(255), password)
             .query(`
                 SELECT IdDoctor, Nombres, Apellidos, Correo 
                 FROM Doctor 
-                WHERE Correo = @correo AND Password = @pass
+                WHERE
+                (
+                    LOWER(Correo) = LOWER(@identificador)
+                    OR Telefono = @identificador
+                )
+                AND Password = @pass
             `);
 
         if (result.recordset.length > 0) {
@@ -307,8 +317,59 @@ app.post("/loginDoctor", async (req, res) => {
                 }
             });
         } else {
-            console.log(`Intento de login fallido para: ${correo}`);
-            res.status(401).json({ error: "Correo o contraseña incorrectos." });
+            console.log(`Intento de login fallido para: ${identificador}`);
+            res.status(401).json({ error: "Correo/Telefono o contraseña de doctor son incorrectos." });
+        }
+    } catch (err) {
+        console.error("Error en el login:", err);
+        res.status(500).json({ error: "Error en el servidor al intentar iniciar sesión." });
+    }
+});
+
+// RUTA PARA EL LOGIN DE RECEPCIONISTA (NUEVO)
+app.post("/loginRecepcionista", async (req, res) => {
+
+    console.log(req.body);
+    const { identificador, password } = req.body;
+
+    if (!identificador || !password ) {
+        return res.status(400).json({ error: "Por favor, ingresa correo/telefono y contraseña." });
+    }
+
+    try {
+        const pool = await sql.connect(dbConfig);
+
+        // Buscamos al recepcionista que coincida con ese correo y contraseña
+        const result = await pool.request()
+            .input("identificador", sql.VarChar(100), identificador)
+            .input('pass', sql.VarChar(255), password)
+            .query(`
+                SELECT IdRecepcionista, Nombres, Apellidos, Correo 
+                FROM Recepcionista 
+                WHERE
+                (
+                    LOWER(Correo) = LOWER(@identificador)
+                )
+                AND Password = @pass
+            `);
+
+        if (result.recordset.length > 0) {
+            const usuario = result.recordset[0];
+            console.log(`Login exitoso: ${usuario.Nombres} (ID: ${usuario.IdRecepcionista})`);
+
+            res.json({
+                mensaje: "Inicio de sesión exitoso",
+                usuario: {
+                    id: usuario.IdRecepcionista,
+                    nombres: usuario.Nombres,
+                    apellidos: usuario.Apellidos,
+                    correo: usuario.Correo
+                    //fotoPerfil: usuario.FotoPerfil
+                }
+            });
+        } else {
+            console.log(`Intento de login fallido para: ${identificador}`);
+            res.status(401).json({ error: "Correo/Telefono o contraseña de recepcionista son incorrectos." });
         }
     } catch (err) {
         console.error("Error en el login:", err);
