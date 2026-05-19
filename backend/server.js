@@ -292,7 +292,7 @@ app.post("/loginDoctor", async (req, res) => {
             .input("identificador", sql.VarChar(100), identificador)
             .input('pass', sql.VarChar(255), password)
             .query(`
-                SELECT IdDoctor, Nombres, Apellidos, Correo 
+                SELECT IdDoctor, Nombres, Apellidos, Correo, FotoPerfil
                 FROM Doctor 
                 WHERE
                 (
@@ -312,8 +312,8 @@ app.post("/loginDoctor", async (req, res) => {
                     id: usuario.IdDoctor,
                     nombres: usuario.Nombres,
                     apellidos: usuario.Apellidos,
-                    correo: usuario.Correo
-                    //fotoPerfil: usuario.FotoPerfil
+                    correo: usuario.Correo,
+                    fotoPerfil: usuario.FotoPerfil
                 }
             });
         } else {
@@ -440,6 +440,39 @@ app.post("/actualizarFotoPerfil", async (req, res) => {
       `);
 
         console.log("Foto actualizada");
+
+        res.json({
+            ok: true,
+            mensaje: "Foto actualizada"
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            error: "Error actualizando foto"
+        });
+    }
+});
+
+// RUTA PARA LA FOTO DE PERFIL DEL DOCTOR (NUEVO)
+app.post("/actualizarFotoDoctor", async (req, res) => {
+
+    const { idDoctor, fotoPerfil } = req.body;
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+            .input("idDoctor", sql.Int, idDoctor)
+            .input("fotoPerfil", sql.VarChar, fotoPerfil)
+            .query(`
+                UPDATE Doctor
+                SET FotoPerfil = @fotoPerfil
+                WHERE IdDoctor = @idDoctor
+            `);
 
         res.json({
             ok: true,

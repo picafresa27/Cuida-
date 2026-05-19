@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker'; 
+import React, { useContext, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // IMPORTACIÓN DE TU CONTEXTO REAL DE CUIDA+
+import API_URL from "../../../config/api";
 import { UserContext } from "../../../context/userContext";
-
-const API_URL = "TU_API_URL_AQUÍ"; 
 
 export default function ConsultoriosYDatosScreen() {
   const router = useRouter();
@@ -98,7 +97,7 @@ export default function ConsultoriosYDatosScreen() {
       console.log("URL CLOUDINARY DOCTOR:", data.secure_url);
 
       const resBackend = await fetch(
-        `${API_URL}/actualizarFotoPerfil`, 
+        `${API_URL}/actualizarFotoDoctor`, 
         {
           method: 'POST',
           headers: {
@@ -110,8 +109,9 @@ export default function ConsultoriosYDatosScreen() {
           }),
         }
       );
-
+      
       if (resBackend.ok) {
+        console.log(resBackend);
         if (setUsuario) {
           setUsuario({
             ...usuario,
@@ -124,6 +124,7 @@ export default function ConsultoriosYDatosScreen() {
       }
 
     } catch (error) {
+      console.log("ID DOCTOR:", usuario?.id);
       console.log("ERROR SUBIDA FOTO DOCTOR:", error);
       Alert.alert("Error", "Ocurrió un fallo al intentar subir la imagen.");
     } finally {

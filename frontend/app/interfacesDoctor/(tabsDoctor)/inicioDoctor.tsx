@@ -124,14 +124,17 @@ export default function HomeDoctor() {
           </Text>
 
           <Text style={styles.appointmentTime}>
-  {new Date(dashboard.siguientePaciente.Fecha).toLocaleDateString(
-    "es-MX",
-    {
+  {
+  new Date(
+    dashboard.siguientePaciente.Fecha + "T00:00:00"
+  )
+    .toLocaleDateString("es-MX", {
       day: "numeric",
       month: "long",
       year: "numeric",
-    }
-  ).replace(" de ", " ").replace(" de ", " ")}{" "}
+    })
+    .replace(/ de /g, " ")
+}{" "}
   - {dashboard.siguientePaciente.Hora} - Consultorio{" "}
   {dashboard.siguientePaciente.NumeroConsultorio}
 </Text>
