@@ -4,7 +4,7 @@ import React from 'react';
 
 export default function TabLayout() {
   return (
-    <Tabs 
+    <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#345195',
         tabBarInactiveTintColor: '#A0AEC0',
@@ -32,10 +32,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="metodosPagoTab" 
+        name="misCitas"
         options={{
-          title: 'Cartera',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="wallet" size={20} color={color} />,
+          title: 'Mis Citas',
+          tabBarIcon: ({ color }) => <FontAwesome5 name="calendar-alt" size={20} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -45,13 +45,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <FontAwesome5 name="user-alt" size={20} color={color} />,
         }}
       />
-      <Tabs.Screen name="misCitas" options={{ href: null }} />
       <Tabs.Screen name="cancelarCita" options={{ href: null }} />
       <Tabs.Screen name="detalleCita" options={{ href: null }} />
       <Tabs.Screen name="agenda" options={{ href: null }} />
       <Tabs.Screen name="agendarCita" options={{ href: null }} />
       <Tabs.Screen name="especialidades" options={{ href: null }} />
       <Tabs.Screen name="metodoPago" options={{ href: null }} />
+      <Tabs.Screen name="metodosPagoTab" options={{ href: null }} />
       <Tabs.Screen name="reagendarCita" options={{ href: null }} />
     </Tabs>
   );
