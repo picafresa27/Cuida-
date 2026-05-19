@@ -1,10 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import API_URL from "../config/api";
-// 1. Quitamos SafeAreaView de aquí
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,12 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// 2. Lo importamos de la librería especializada
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Registro() {
-  // ... (Tus estados y funciones se mantienen exactamente igual)
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [correo, setCorreo] = useState("");
@@ -30,6 +25,7 @@ export default function Registro() {
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
   const [genero, setGenero] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false); // <-- Estado para desplegar la lista
   const [password, setPassword] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [verPassword, setVerPassword] = useState(true);
@@ -57,7 +53,6 @@ export default function Registro() {
   };
 
   const crearUsuario = async () => {
-    // ... (Toda tu lógica de validación y fetch se queda igual)
     if (!nombre || !apellidos || !correo || !password || !telefono || !fechaNacimiento || !genero) {
       Alert.alert("Error", "Completa todos los campos obligatorios");
       return;
@@ -115,7 +110,6 @@ export default function Registro() {
   };
 
   return (
-    // 3. El contenedor principal con flex: 1
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -128,7 +122,6 @@ export default function Registro() {
             Completa tus datos para acceder a citas y seguimiento médico.
           </Text>
 
-          {/* --- Campos del formulario --- */}
           <Text style={styles.label}>Nombres</Text>
           <TextInput style={styles.input} placeholder="Ejem. Edgar" value={nombre} onChangeText={setNombre} />
 
@@ -152,16 +145,37 @@ export default function Registro() {
             <DateTimePicker value={date} mode="date" display="default" onChange={onChange} maximumDate={new Date()} />
           )}
 
+          {/* MENÚ DESPLEGABLE PERSONALIZADO (SIN RUEDA) */}
           <Text style={styles.label}>Género</Text>
           <View style={styles.pickerContainer}>
-            <Picker selectedValue={genero} onValueChange={setGenero} style={styles.picker}>
-              <Picker.Item label="Selecciona un género" value="" enabled={false} />
-              <Picker.Item label="Hombre" value="Hombre" />
-              <Picker.Item label="Mujer" value="Mujer" />
-            </Picker>
-          </View>
+            <TouchableOpacity 
+              style={styles.dropdownHeader} 
+              onPress={() => setShowDropdown(!showDropdown)}
+            >
+              <Text style={{ color: genero ? "#000" : "#a0aec0" }}>
+                {genero || "Selecciona un género"}
+              </Text>
+              <Ionicons name={showDropdown ? "chevron-up" : "chevron-down"} size={20} color="#a0aec0" />
+            </TouchableOpacity>
 
-          {/* ... después del campo de Género */}
+            {/* Lista que se despliega al hacer clic */}
+            {showDropdown && (
+              <View style={styles.dropdownList}>
+                <TouchableOpacity 
+                  style={styles.dropdownItem} 
+                  onPress={() => { setGenero("Hombre"); setShowDropdown(false); }}
+                >
+                  <Text>Hombre</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.dropdownItem, { borderBottomWidth: 0 }]} 
+                  onPress={() => { setGenero("Mujer"); setShowDropdown(false); }}
+                >
+                  <Text>Mujer</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
 
           <Text style={styles.label}>Contraseña</Text>
           <View style={styles.passwordContainer}>
@@ -181,7 +195,6 @@ export default function Registro() {
             </TouchableOpacity>
           </View>
 
-          {/* AQUÍ VA EL CAMPO DE CONFIRMAR CONTRASEÑA */}
           <Text style={styles.label}>Confirmar Contraseña</Text>
           <View style={styles.passwordContainer}>
             <TextInput
@@ -200,7 +213,6 @@ export default function Registro() {
             </TouchableOpacity>
           </View>
 
-          {/* El botón siempre queda al final */}
           <TouchableOpacity style={styles.button} onPress={crearUsuario}>
             <Text style={styles.buttonText}>Crear cuenta en Cuida+</Text>
           </TouchableOpacity>
@@ -211,26 +223,30 @@ export default function Registro() {
 }
 
 const styles = StyleSheet.create({
-  // Asegúrate de que el contenedor tenga flex: 1 y el mismo fondo de tu app
   container: {
     flex: 1,
     backgroundColor: "#F4F6F8"
   },
   content: {
     padding: 20,
-    paddingBottom: 40 // Espacio extra al final para que el botón no quede pegado
+    paddingBottom: 40
   },
   logo: { fontSize: 18, fontWeight: "600", color: "#3A5BA0", marginBottom: 10 },
   title: { fontSize: 26, fontWeight: "bold" },
   subtitle: { color: "#6b7280", marginBottom: 20 },
   label: { marginTop: 10, marginBottom: 5, color: "#4a5568", fontWeight: "600" },
   input: { backgroundColor: "#fff", padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e0" },
+  
   pickerContainer: { backgroundColor: "#fff", borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e0", overflow: "hidden" },
-  picker: { height: 55, width: "100%" },
+  
+  // ESTILOS DE LA NUEVA LISTA DESPLEGABLE
+  dropdownHeader: { padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dropdownList: { borderTopWidth: 1, borderColor: "#cbd5e0", backgroundColor: "#f8fafc" },
+  dropdownItem: { padding: 14, borderBottomWidth: 1, borderColor: "#e2e8f0" },
+  
   button: { marginTop: 25, backgroundColor: "#3A5BA0", padding: 15, borderRadius: 12, alignItems: "center" },
   buttonText: { color: "#fff", fontWeight: "bold" },
-  // Dentro de styles = StyleSheet.create({ ... })
-
+  
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -242,7 +258,6 @@ const styles = StyleSheet.create({
   inputPassword: {
     flex: 1,
     padding: 14,
-    // Ya no necesita borde aquí porque lo tiene el contenedor
   },
   eyeIcon: {
     paddingHorizontal: 15,
