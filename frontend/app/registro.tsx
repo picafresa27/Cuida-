@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router } from "expo-router";
 import { useState } from "react";
-import API_URL from "../config/api";
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView, // ✅ Corregido: Importación agregada
   ScrollView,
   StyleSheet,
   Text,
@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import API_URL from "../config/api";
 
 export default function Registro() {
   const [nombre, setNombre] = useState("");
@@ -25,7 +25,7 @@ export default function Registro() {
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
   const [genero, setGenero] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false); // <-- Estado para desplegar la lista
+  const [showDropdown, setShowDropdown] = useState(false); 
   const [password, setPassword] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [verPassword, setVerPassword] = useState(true);
@@ -92,7 +92,7 @@ export default function Registro() {
           fechaNacimiento,
           telefono: telefono.replace(/\D/g, ""),
           correo: correo.trim(),
-          genero: genero === "Hombre" ? "M" : "F",
+          genero: genero === "Masculino" ? "M" : "F",
           password,
         }),
       });
@@ -115,7 +115,11 @@ export default function Registro() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={styles.content} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled" // Permite cerrar el dropdown de un toque sin interferir con el teclado
+        >
           <Text style={styles.logo}>Cuida+</Text>
           <Text style={styles.title}>Crear cuenta</Text>
           <Text style={styles.subtitle}>
@@ -145,33 +149,32 @@ export default function Registro() {
             <DateTimePicker value={date} mode="date" display="default" onChange={onChange} maximumDate={new Date()} />
           )}
 
-          {/* MENÚ DESPLEGABLE PERSONALIZADO (SIN RUEDA) */}
           <Text style={styles.label}>Género</Text>
           <View style={styles.pickerContainer}>
             <TouchableOpacity 
               style={styles.dropdownHeader} 
               onPress={() => setShowDropdown(!showDropdown)}
             >
-              <Text style={{ color: genero ? "#000" : "#a0aec0" }}>
+              <Text style={{ color: genero ? "#000" : "#a0aec0", fontSize: 16 }}>
                 {genero || "Selecciona un género"}
               </Text>
               <Ionicons name={showDropdown ? "chevron-up" : "chevron-down"} size={20} color="#a0aec0" />
             </TouchableOpacity>
 
-            {/* Lista que se despliega al hacer clic */}
+            {/* Lista que se despliega flotando por encima del resto de campos */}
             {showDropdown && (
               <View style={styles.dropdownList}>
                 <TouchableOpacity 
                   style={styles.dropdownItem} 
-                  onPress={() => { setGenero("Hombre"); setShowDropdown(false); }}
+                  onPress={() => { setGenero("Masculino"); setShowDropdown(false); }}
                 >
-                  <Text>Hombre</Text>
+                  <Text style={styles.itemTexto}>Masculino</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[styles.dropdownItem, { borderBottomWidth: 0 }]} 
-                  onPress={() => { setGenero("Mujer"); setShowDropdown(false); }}
+                  onPress={() => { setGenero("Femenino"); setShowDropdown(false); }}
                 >
-                  <Text>Mujer</Text>
+                  <Text style={styles.itemTexto}>Femenino</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -235,14 +238,32 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: "bold" },
   subtitle: { color: "#6b7280", marginBottom: 20 },
   label: { marginTop: 10, marginBottom: 5, color: "#4a5568", fontWeight: "600" },
-  input: { backgroundColor: "#fff", padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e0" },
+  input: { backgroundColor: "#fff", padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e0", fontSize: 16 },
   
-  pickerContainer: { backgroundColor: "#fff", borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e0", overflow: "hidden" },
+  // ✅ Corregido: Contenedor con comportamiento posicional relativo
+  pickerContainer: { zIndex: 10, position: 'relative' },
   
-  // ESTILOS DE LA NUEVA LISTA DESPLEGABLE
-  dropdownHeader: { padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dropdownList: { borderTopWidth: 1, borderColor: "#cbd5e0", backgroundColor: "#f8fafc" },
+  dropdownHeader: { backgroundColor: "#fff", padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e0", flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  
+  // ✅ Corregido: Estilos absolutos para simular una caja flotante profesional
+  dropdownList: { 
+    position: 'absolute',
+    top: 55,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff", 
+    borderRadius: 10, 
+    borderWidth: 1, 
+    borderColor: "#cbd5e0",
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    zIndex: 999 
+  },
   dropdownItem: { padding: 14, borderBottomWidth: 1, borderColor: "#e2e8f0" },
+  itemTexto: { fontSize: 16, color: '#000' },
   
   button: { marginTop: 25, backgroundColor: "#3A5BA0", padding: 15, borderRadius: 12, alignItems: "center" },
   buttonText: { color: "#fff", fontWeight: "bold" },
@@ -258,6 +279,7 @@ const styles = StyleSheet.create({
   inputPassword: {
     flex: 1,
     padding: 14,
+    fontSize: 16
   },
   eyeIcon: {
     paddingHorizontal: 15,

@@ -1015,6 +1015,115 @@ app.get("/detalle-cita/:idCita", async (req, res) => {
     }
 
 });
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+app.get("/paciente/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .query(`
+        SELECT
+          IdPaciente,
+          Nombres,
+          Apellidos,
+          Genero,
+          FechaNacimiento,
+          Telefono,
+          Correo
+        FROM Paciente
+        WHERE IdPaciente = @id
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({
+        error: "Paciente no encontrado"
+      });
+    }
+
+    res.json(result.recordset[0]);
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json({
+      error: "Error obteniendo paciente"
+    });
+
+  }
+});
+
+// ==========================================
+// BUSCAR ESPECIALIDADES
+// ==========================================
+app.get("/especialidades", async (req, res) => {
+
+  const { texto } = req.query;
+
+  try {
+
+    const pool = await sql.connect(dbConfig);
+
+    const result = await pool.request()
+      .input("texto", sql.VarChar, `%${texto}%`)
+      .query(`
+        SELECT DISTINCT Especialidad
+        FROM Doctor
+        WHERE Especialidad LIKE @texto
+      `);
+
+    res.json(result.recordset);
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json({
+      error: "Error obteniendo especialidades"
+    });
+
+  }
+});
+
+// ==========================================
+// DOCTORES POR ESPECIALIDAD
+// ==========================================
+app.get("/doctores/:especialidad", async (req, res) => {
+
+  const { especialidad } = req.params;
+
+  try {
+
+    const pool = await sql.connect(dbConfig);
+
+    const result = await pool.request()
+      .input("especialidad", sql.VarChar, especialidad)
+      .query(`
+        SELECT
+          IdDoctor,
+          Nombres,
+          Apellidos,
+          Especialidad
+        FROM Doctor
+        WHERE Especialidad = @especialidad
+      `);
+
+    res.json(result.recordset);
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json({
+      error: "Error obteniendo doctores"
+    });
+
+  }
+});
 
 app.put("/cancelar-cita/:idCita", async (req, res) => {
   const { idCita } = req.params;

@@ -39,7 +39,7 @@ export default function RecepcionLayout() {
         name="consultorios"
         options={{
           title: 'Consultorios',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="consultorios" size={20} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="comments" size={20} color={color} />,
         }}
       />
     </Tabs>
