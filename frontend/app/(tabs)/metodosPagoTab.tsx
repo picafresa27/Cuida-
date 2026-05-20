@@ -1,16 +1,16 @@
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { FontAwesome, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { useState } from "react";
 import {
-  Alert,
+  Alert, // Para mensajes rápidos en Android
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  ToastAndroid,
   TouchableOpacity,
   View,
-  ToastAndroid, // Para mensajes rápidos en Android
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 

@@ -1,6 +1,5 @@
 import { useRouter } from "expo-router";
 //import React from "react";
-import API_URL from "../../config/api";
 import { Ionicons } from '@expo/vector-icons';
 import {
   SafeAreaView,
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import API_URL from "../../config/api";
 
 /*const MEDICOS = [
   {
@@ -36,7 +36,7 @@ import {
   },
 ];*/
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function BuscarMedico() {
   // 1. Estado para el texto de búsqueda

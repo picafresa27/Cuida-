@@ -1,6 +1,5 @@
 import { useFocusEffect } from "expo-router"; // Para actualizar al entrar a la pestaña
-import API_URL from "../../config/api";
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -10,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import API_URL from "../../config/api";
 
 export default function AgendaScreen() {
   const [citas, setCitas] = useState([]);
@@ -20,7 +20,7 @@ export default function AgendaScreen() {
   const obtenerCitas = async () => {
     try {
       // Por ahora usamos el ID 1, luego lo traerás del login
-      const idPaciente = 1; 
+      const idPaciente = 'LOME050831HSLPRDA7'; 
       const response = await fetch(
         `${API_URL}/mis-citas/${idPaciente}`
       );

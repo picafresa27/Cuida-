@@ -1,6 +1,5 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import React from 'react';
 
 export default function RecepcionLayout() {
   return (

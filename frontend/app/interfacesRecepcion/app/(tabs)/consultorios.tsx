@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
 } from "react-native";
 
 export default function ConsultoriosStatus() {

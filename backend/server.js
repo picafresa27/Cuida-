@@ -53,16 +53,30 @@ app.get("/", (req, res) => {
 
 //Crear un nuevo Paciente
 app.post("/registro", async (req, res) => {
-    const { nombre, apellidos, fechaNacimiento, genero, telefono, correo, password } = req.body;
+    const { curp, nombre, apellidos, fechaNacimiento, genero, telefono, correo, password } = req.body;
 
-    if (!nombre || !apellidos || !fechaNacimiento || !correo || !password) {
+    if (!curp || !nombre || !apellidos || !fechaNacimiento || !correo || !password) {
         return res.status(400).json({
-            error: "Los campos Nombre, Apellidos, Fecha de Nacimiento, Correo y Password son obligatorios."
+            error: "Los campos CURP, Nombre, Apellidos, Fecha de Nacimiento, Correo y Password son obligatorios."
         });
     }
 
     try {
         const pool = await sql.connect(dbConfig);
+
+        const curpExistente = await pool.request()
+    .input('curp', sql.VarChar(18), curp)
+    .query(`
+        SELECT *
+        FROM Paciente
+        WHERE IdPaciente = @curp
+    `);
+
+if (curpExistente.recordset.length > 0) {
+    return res.status(400).json({
+        error: "Ya existe un paciente con esta CURP."
+    });
+}
 
         const correoLimpio = correo.trim().toLowerCase();
 
@@ -84,6 +98,7 @@ app.post("/registro", async (req, res) => {
 
         // INSERTAR NUEVO USUARIO
         await pool.request()
+             .input('curp', sql.VarChar(18), curp)
             .input('nombres', sql.VarChar(50), nombre)
             .input('apellidos', sql.VarChar(50), apellidos)
             .input('fecha', sql.Date, fechaNacimiento)
@@ -93,9 +108,9 @@ app.post("/registro", async (req, res) => {
             .input('pass', sql.VarChar(255), password)
             .query(`
                 INSERT INTO Paciente
-                (Nombres, Apellidos, FechaNacimiento, Genero, Telefono, Correo, Password)
+                (IdPaciente, Nombres, Apellidos, FechaNacimiento, Genero, Telefono, Correo, Password)
                 VALUES
-                (@nombres, @apellidos, @fecha, @genero, @tel, @correo, @pass)
+                (@curp, @nombres, @apellidos, @fecha, @genero, @tel, @correo, @pass)
             `);
 
         res.json({
@@ -118,6 +133,7 @@ app.post("/registro", async (req, res) => {
 app.post("/registro-recepcion", async (req, res) => {
     // 1. CORREGIDO: Cambiado 'nombres' por 'nombre' para que coincida con tu frontend estándar
     const {
+        curp,
         nombre,
         apellidos,
         fechaNacimiento,
@@ -128,14 +144,28 @@ app.post("/registro-recepcion", async (req, res) => {
     } = req.body;
 
     // Validación básica de los datos indispensables
-    if (!nombre || !apellidos || !fechaNacimiento || !correo || !password) {
+    if (!curp || !nombre || !apellidos || !fechaNacimiento || !correo || !password) {
         return res.status(400).json({
-            error: "Los campos Nombre, Apellidos, Fecha de Nacimiento, Correo y Password son obligatorios."
+            error: "Los campos CURP, Nombre, Apellidos, Fecha de Nacimiento, Correo y Password son obligatorios."
         });
     }
 
     try {
         const pool = await sql.connect(dbConfig);
+
+        const curpExistente = await pool.request()
+    .input('curp', sql.VarChar(18), curp)
+    .query(`
+        SELECT *
+        FROM Paciente
+        WHERE IdPaciente = @curp
+    `);
+
+if (curpExistente.recordset.length > 0) {
+    return res.status(400).json({
+        error: "Ya existe un paciente con esta CURP."
+    });
+}
 
         const correoLimpio = correo.trim().toLowerCase();
 
@@ -156,6 +186,7 @@ app.post("/registro-recepcion", async (req, res) => {
         // 3. INSERTAR ÚNICAMENTE EL NUEVO PACIENTE 
         // Se cambió sql.VarChar(10) por sql.Date para aceptar el formato YYYY-MM-DD
         const queryPaciente = await pool.request()
+            .input('curp', sql.VarChar(18), curp)
             .input('nombres', sql.VarChar(50), nombre)
             .input('apellidos', sql.VarChar(50), apellidos)
             .input('fecha', sql.Date, fechaNacimiento)
@@ -164,9 +195,9 @@ app.post("/registro-recepcion", async (req, res) => {
             .input('correo', sql.VarChar(100), correoLimpio)
             .input('pass', sql.VarChar(255), password)
             .query(`
-                INSERT INTO Paciente (Nombres, Apellidos, FechaNacimiento, Genero, Telefono, Correo, Password)
+                INSERT INTO Paciente (IdPaciente, Nombres, Apellidos, FechaNacimiento, Genero, Telefono, Correo, Password)
                 OUTPUT INSERTED.IdPaciente
-                VALUES (@nombres, @apellidos, @fecha, @genero, @tel, @correo, @pass)
+                VALUES (@curp, @nombres, @apellidos, @fecha, @genero, @tel, @correo, @pass)
             `);
 
         const nuevoIdPaciente = queryPaciente.recordset[0].IdPaciente;
@@ -246,6 +277,7 @@ app.post("/login", async (req, res) => {
                 (
                     LOWER(Correo) = LOWER(@identificador)
                     OR Telefono = @identificador
+                    OR IdPaciente = @identificador
                 )
                 AND Password = @pass
             `);
@@ -431,7 +463,7 @@ app.post("/actualizarFotoPerfil", async (req, res) => {
         const pool = await sql.connect(dbConfig);
 
         await pool.request()
-            .input("idPaciente", sql.Int, idPaciente)
+            .input("idPaciente", sql.VarChar(18), idPaciente)
             .input("fotoPerfil", sql.VarChar, fotoPerfil)
             .query(`
         UPDATE Paciente
@@ -499,7 +531,7 @@ app.post("/agendarCita", async (req, res) => {
         const checkPaciente = await pool.request()
             .input("fecha", sql.VarChar, fecha)
             .input("hora", sql.VarChar, hora)
-            .input("idPaciente", sql.Int, idPaciente)
+            .input("idPaciente", sql.VarChar(18), idPaciente)
             .query(`
                 SELECT COUNT(*) as total 
                 FROM CitaMedica 
@@ -539,13 +571,9 @@ app.post("/agendarCita", async (req, res) => {
         .input("hora", sql.VarChar, hora)
         .input("estado", sql.VarChar(20), 'Pendiente')
         .input("anticipo", sql.Bit, anticipo ? 1 : 0)
-        .input("idpaciente", sql.Int, idPaciente)
+        .input("idpaciente", sql.VarChar(18), idPaciente)
         .input("iddoctor", sql.Int, idDoctor)
-        .input(
-            "numeroConsultorio",
-            sql.VarChar,
-            numeroConsultorio
-            )
+        .input("numeroconsultorio", sql.VarChar(10), numeroConsultorio) // <-- Todo en minúsculas aquí
         .query(`
             INSERT INTO CitaMedica (Fecha, Hora, Estado, Anticipo, IdPaciente, IdDoctor, NumeroConsultorio) 
             VALUES (@fecha, @hora, @estado, @anticipo, @idpaciente, @iddoctor, @numeroconsultorio); -- <-- Y todo en minúsculas aquí
@@ -611,7 +639,7 @@ app.get("/mis-citas/:idPaciente", async (req, res) => {
     try {
         const pool = await sql.connect(dbConfig);
         const result = await pool.request()
-            .input("idPaciente", sql.Int, idPaciente)
+            .input("idPaciente", sql.VarChar(18), idPaciente)
             .query(`
                 SELECT 
                     C.IdCita, 
@@ -664,7 +692,7 @@ app.put("/actualizar-perfil/:id", async (req, res) => {
     try {
         const pool = await sql.connect(dbConfig);
         await pool.request()
-            .input("id", sql.Int, id)
+            .input("id", sql.VarChar(18), id)
             .input("nombre", sql.VarChar, nombre)
             .input("apellidos", sql.VarChar, apellidos)
             .input("telefono", sql.VarChar, telefono)
@@ -754,8 +782,9 @@ app.get("/proxima-cita/:idPaciente", async (req, res) => {
 
     try {
         const pool = await sql.connect(dbConfig);
+
         const result = await pool.request()
-            .input("idPaciente", sql.Int, idPaciente)
+            .input("idPaciente", sql.VarChar(18), idPaciente)
             .query(`
                 SELECT TOP 1 
                     c.IdCita, 
@@ -766,16 +795,24 @@ app.get("/proxima-cita/:idPaciente", async (req, res) => {
                     d.Especialidad 
                 FROM CitaMedica c
                 LEFT JOIN Doctor d ON c.IdDoctor = d.IdDoctor
-                WHERE c.IdPaciente = @idPaciente 
-                AND CAST(c.Fecha AS DATE) >= CAST(GETDATE() AS DATE)
+                WHERE c.IdPaciente = @idPaciente
+                AND c.Estado = 'Confirmada'
+                AND (
+                    CAST(c.Fecha AS DATE) > CAST(GETDATE() AS DATE)
+                    OR (
+                        CAST(c.Fecha AS DATE) = CAST(GETDATE() AS DATE)
+                        AND CAST(c.Hora AS TIME) >= CAST(GETDATE() AS TIME)
+                    )
+                )
                 ORDER BY c.Fecha ASC, c.Hora ASC
             `);
 
         if (result.recordset.length > 0) {
             res.json(result.recordset[0]);
         } else {
-            res.json(null); // Si la cita más cercana ya pasó, enviamos null
+            res.json(null);
         }
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Error al buscar la próxima cita" });
@@ -924,7 +961,7 @@ app.get("/expediente/:idPaciente", async (req, res) => {
         const pool = await sql.connect(dbConfig);
 
         const result = await pool.request()
-            .input("idPaciente", sql.Int, idPaciente)
+            .input("idPaciente", sql.VarChar(18), idPaciente)
             .query(`
                 SELECT
                     NumeroExpediente,
@@ -956,7 +993,7 @@ app.get("/historial-paciente/:idPaciente/:idDoctor", async (req, res) => {
         const pool = await sql.connect(dbConfig);
 
         const result = await pool.request()
-            .input("idPaciente", sql.Int, idPaciente)
+            .input("idPaciente", sql.VarChar(18), idPaciente)
             .input("idDoctor", sql.Int, idDoctor)
             .query(`
                 SELECT
@@ -1028,7 +1065,7 @@ app.get("/paciente/:id", async (req, res) => {
     const pool = await sql.connect(dbConfig);
 
     const result = await pool.request()
-      .input("id", sql.Int, id)
+      .input("id", sql.VarChar(18), id)
       .query(`
         SELECT
           IdPaciente,
@@ -1127,255 +1164,6 @@ app.get("/doctores/:especialidad", async (req, res) => {
     });
 
   }
-});
-
-// ==========================================
-// HORARIOS DISPONIBLES
-// ==========================================
-app.get("/horarios-disponibles/:doctor/:fecha", async (req, res) => {
-
-  const { doctor, fecha } = req.params;
-
-  try {
-
-    const pool = await sql.connect(dbConfig);
-
-    // CONSULTAR HORARIOS DEL DOCTOR
-    const result = await pool.request()
-      .input("doctor", sql.Int, doctor)
-      .input("fecha", sql.Date, fecha)
-      .query(`
-            SELECT HorarioInicio
-            FROM HorarioLaboral
-            WHERE IdDoctor = @doctor
-            AND CAST(Fecha AS DATE) = @fecha
-            AND EstatusHorario = 'Disponible'
-        `);
-
-    console.log(result.recordset);
-    // FORMATEAR HORAS
-    const disponibles = [
-        ...new Set(
-            result.recordset.map(item => {
-
-            const hora = new Date(item.HorarioInicio);
-
-            return hora.toLocaleTimeString("es-MX", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false
-            });
-
-            })
-        )
-        ];
-
-    console.log(disponibles);
-
-    res.json(disponibles);
-
-  } catch (error) {
-
-    console.log(error);
-
-    res.status(500).json({
-      error: "Error obteniendo horarios"
-    });
-
-  }
-
-});
-
-// ==========================================
-// CONSULTORIO DEL DOCTOR
-// ==========================================
-app.get("/consultorio/:doctor", async (req, res) => {
-
-  const { doctor } = req.params;
-
-  try {
-
-    const pool = await sql.connect(dbConfig);
-
-    const result = await pool.request()
-      .input("doctor", sql.Int, doctor)
-      .query(`
-        SELECT TOP 1 NumeroConsultorio
-        FROM HorarioLaboral
-        WHERE IdDoctor = @doctor
-      `);
-
-    res.json(result.recordset[0]);
-
-  } catch (error) {
-
-    console.log(error);
-
-    res.status(500).json({
-      error: "Error obteniendo consultorio"
-    });
-
-  }
-
-});
-
-// ==========================================
-// AGENDAR CITA
-// ==========================================
-app.post("/agendar-cita", async (req, res) => {
-
-  const {
-    idPaciente,
-    doctorId,
-    fecha,
-    hora
-  } = req.body;
-
-  try {
-
-    const pool = await sql.connect(dbConfig);
-
-    // ==========================================
-    // OBTENER CONSULTORIO DEL DOCTOR
-    // ==========================================
-    const consultorioResult = await pool.request()
-      .input("doctor", sql.Int, doctorId)
-      .query(`
-        SELECT TOP 1 NumeroConsultorio
-        FROM HorarioLaboral
-        WHERE IdDoctor = @doctor
-      `);
-
-    if (consultorioResult.recordset.length === 0) {
-
-      return res.status(404).json({
-        error: "No se encontró consultorio para el doctor"
-      });
-
-    }
-
-    const consultorio =
-      consultorioResult.recordset[0].NumeroConsultorio;
-
-    // ==========================================
-    // VERIFICAR SI YA EXISTE ESA CITA
-    // ==========================================
-    const citaExistente = await pool.request()
-      .input("doctor", sql.Int, doctorId)
-      .input("fecha", sql.Date, fecha)
-      .input("hora", sql.VarChar, hora)
-      .query(`
-        SELECT *
-        FROM citaMedica
-        WHERE IdDoctor = @doctor
-        AND Fecha = @fecha
-        AND Hora = @hora
-      `);
-
-    if (citaExistente.recordset.length > 0) {
-
-      return res.status(400).json({
-        error: "Ese horario ya está ocupado"
-      });
-
-    }
-
-    // ==========================================
-    // VERIFICAR CONSULTORIO OCUPADO
-    // ==========================================
-    const consultorioOcupado = await pool.request()
-      .input("consultorio", sql.Int, consultorio)
-      .input("fecha", sql.Date, fecha)
-      .input("hora", sql.VarChar, hora)
-      .query(`
-        SELECT *
-        FROM citaMedica
-        WHERE Fecha = @fecha
-        AND Hora = @hora
-        AND NumeroConsultorio = @consultorio
-      `);
-
-    if (consultorioOcupado.recordset.length > 0) {
-
-      return res.status(400).json({
-        error: "El consultorio ya está ocupado"
-      });
-
-    }
-
-    // ==========================================
-    // INSERTAR CITA
-    // ==========================================
-    await pool.request()
-    .input("fecha", sql.Date, fecha)
-    .input("hora", sql.VarChar, hora)
-    .input("estado", sql.VarChar, "Activa")
-    .input("anticipo", sql.Int, 1)
-    .input("idPaciente", sql.Int, Number(idPaciente))
-    .input("idDoctor", sql.Int, Number(idDoctor))
-    .input("numeroConsultorio", sql.VarChar, numeroConsultorio)
-    .query(`
-        INSERT INTO CitaMedica
-        (
-        Fecha,
-        Hora,
-        Estado,
-        Anticipo,
-        IdPaciente,
-        IdDoctor,
-        NumeroConsultorio
-        )
-        VALUES
-        (
-        @fecha,
-        @hora,
-        @estado,
-        @anticipo,
-        @idPaciente,
-        @idDoctor,
-        @numeroConsultorio
-        )
-    `);
-
-    // ==========================================
-    // BLOQUEAR HORARIO
-    // ==========================================
-    await pool.request()
-      .input("doctor", sql.Int, Number(doctorId))
-      .input("fecha", sql.Date, fecha)
-      .input("hora", sql.Time, hora + ":00")
-      .query(`
-        UPDATE HorarioLaboral
-        SET EstatusHorario = 'Ocupado'
-        WHERE IdDoctor = @doctor
-        AND Fecha = @fecha
-        AND CAST(HorarioInicio AS TIME) = @hora
-      `);
-
-    // ==========================================
-    // RESPUESTA EXITOSA
-    // ==========================================
-    res.json({
-      mensaje: "Cita agendada correctamente",
-      datos: {
-        paciente: idPaciente,
-        doctor: doctorId,
-        fecha,
-        hora,
-        consultorio
-      }
-    });
-
-  } catch (error) {
-
-    console.log(error);
-
-    res.status(500).json({
-      error: "Error guardando la cita"
-    });
-
-  }
-
 });
 
 app.put("/cancelar-cita/:idCita", async (req, res) => {

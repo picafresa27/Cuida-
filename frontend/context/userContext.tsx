@@ -1,7 +1,7 @@
-import React, { createContext, useState, ReactNode } from "react";
+import React, { createContext, ReactNode, useState } from "react";
 
 interface Usuario {
-  id?: number;
+  id?: string | number;
   nombres: string;
   apellidos: string;
   correo: string;

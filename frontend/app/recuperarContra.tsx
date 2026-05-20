@@ -1,19 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert, // Para cerrar el teclado al tocar fuera
-    Keyboard,
-    KeyboardAvoidingView, // 1. Importamos esto
-    Platform,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput, // 2. Importamos esto para detectar si es iOS o Android
-    TouchableWithoutFeedback,
-    View
+  ActivityIndicator,
+  Alert, // Para cerrar el teclado al tocar fuera
+  Keyboard,
+  KeyboardAvoidingView, // 1. Importamos esto
+  Platform,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput, // 2. Importamos esto para detectar si es iOS o Android
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
 import API_URL from '../config/api';
 

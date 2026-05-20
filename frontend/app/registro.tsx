@@ -17,6 +17,7 @@ import {
 import API_URL from "../config/api";
 
 export default function Registro() {
+  const [curp, setCurp] = useState("");
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [correo, setCorreo] = useState("");
@@ -53,7 +54,7 @@ export default function Registro() {
   };
 
   const crearUsuario = async () => {
-    if (!nombre || !apellidos || !correo || !password || !telefono || !fechaNacimiento || !genero) {
+    if (!curp || !nombre || !apellidos || !correo || !password || !telefono || !fechaNacimiento || !genero) {
       Alert.alert("Error", "Completa todos los campos obligatorios");
       return;
     }
@@ -81,12 +82,20 @@ export default function Registro() {
       return;
     }
 
+    const regexCurp = /^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9]{2}$/;
+
+if (!regexCurp.test(curp)) {
+  Alert.alert("Error", "La CURP no tiene un formato válido");
+  return;
+}
+
     try {
       const URL_BACKEND = `${API_URL}/registro`;
       const res = await fetch(URL_BACKEND, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          curp,
           nombre,
           apellidos,
           fechaNacimiento,
@@ -131,6 +140,15 @@ export default function Registro() {
 
           <Text style={styles.label}>Apellidos</Text>
           <TextInput style={styles.input} placeholder="Ejem. López" value={apellidos} onChangeText={setApellidos} />
+
+          <Text style={styles.label}>CURP</Text>
+<TextInput
+  style={styles.input}
+  placeholder="Ejem. LOPE010101HSRXXX01"
+  value={curp}
+  onChangeText={(texto) => setCurp(texto.toUpperCase())}
+  maxLength={18}
+/>
 
           <Text style={styles.label}>Correo electrónico</Text>
           <TextInput style={styles.input} placeholder="correo@email.com" keyboardType="email-address" value={correo} onChangeText={setCorreo} />

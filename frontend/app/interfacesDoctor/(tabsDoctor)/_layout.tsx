@@ -1,7 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { useSegments, useRouter, useRootNavigationState } from "expo-router";
 
 export default function DoctorTabsLayout() {
   return (
@@ -83,10 +81,4 @@ export default function DoctorTabsLayout() {
     </Tabs>
   );
 
-  <Tabs.Screen
-        name="expedientePaciente"
-        options={{
-          href: null, // Lo oculta de la barra de navegación inferior
-        }}
-      />
 }

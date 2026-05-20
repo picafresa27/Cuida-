@@ -1,13 +1,13 @@
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import API_URL from "../../../config/api";
 import { UserContext } from "../../../context/userContext";
@@ -68,7 +68,7 @@ const abrirPaciente = async (paciente: any) => {
   }
 };
 
-const obtenerExpediente = async (idPaciente: number) => {
+const obtenerExpediente = async (idPaciente: string) => {
 
   try {
 

@@ -32,9 +32,9 @@ export default function LoginScreen() {
       Alert.alert("Error", "Completa todos los campos");
       return;
     }
-    const identificadorLimpio = identificador.toLowerCase();
+    const identificadorLimpio = identificador.trim();
 
-    if (identificadorLimpio.startsWith("rec.") && identificadorLimpio.endsWith("@cuidaplus.com")) {
+    if (identificadorLimpio.toLowerCase().startsWith("rec.") && identificadorLimpio.toLowerCase().endsWith("@cuidaplus.com")) {
       try {
         const res = await fetch(`${API_URL}/loginRecepcionista`, {
           method: "POST",
@@ -62,7 +62,7 @@ export default function LoginScreen() {
         Alert.alert("Error", "No se pudo conectar al servidor");
         console.log("Error login:", error);
       }
-    } else if(identificadorLimpio.endsWith("@cuidaplus.com")){
+    } else if(identificadorLimpio.toLowerCase().endsWith("@cuidaplus.com")){
       try {
         const res = await fetch(`${API_URL}/loginDoctor`, {
           method: "POST",
@@ -152,7 +152,7 @@ export default function LoginScreen() {
             <View style={styles.form}>
               {/* Input Correo */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Correo electrónico / Telefono</Text>
+                <Text style={styles.label}>Correo electrónico / Telefono / CURP</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="correo@gmail.com"

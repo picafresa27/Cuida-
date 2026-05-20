@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from "expo-router"; // 1. Agregamos useFocusEffect
-import React, { useCallback, useContext, useEffect, useState } from "react"; // 2. Agregamos useCallback
+import { useCallback, useContext, useEffect, useState } from "react"; // 2. Agregamos useCallback
 import {
   ActivityIndicator,
   Pressable,
@@ -153,6 +153,7 @@ export default function HomePaciente() {
               router.push({
                 pathname: "/(tabs)/detalleCita",
                 params: {
+                  idCita: proximaCita.IdCita,
                   doctor: `Dr. ${proximaCita.NombreMedico} ${proximaCita.ApellidoMedico}`,
                   especialidad: proximaCita.Especialidad,
                   fecha: formatearFechaInicio(proximaCita.Fecha, proximaCita.Hora),
