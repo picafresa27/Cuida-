@@ -541,7 +541,11 @@ app.post("/agendarCita", async (req, res) => {
         .input("anticipo", sql.Bit, anticipo ? 1 : 0)
         .input("idpaciente", sql.Int, idPaciente)
         .input("iddoctor", sql.Int, idDoctor)
-        .input("numeroconsultorio", sql.VarChar(10), numeroConsultorio) // <-- Todo en minúsculas aquí
+        .input(
+            "numeroConsultorio",
+            sql.VarChar,
+            numeroConsultorio
+            )
         .query(`
             INSERT INTO CitaMedica (Fecha, Hora, Estado, Anticipo, IdPaciente, IdDoctor, NumeroConsultorio) 
             VALUES (@fecha, @hora, @estado, @anticipo, @idpaciente, @iddoctor, @numeroconsultorio); -- <-- Y todo en minúsculas aquí
@@ -1123,6 +1127,255 @@ app.get("/doctores/:especialidad", async (req, res) => {
     });
 
   }
+});
+
+// ==========================================
+// HORARIOS DISPONIBLES
+// ==========================================
+app.get("/horarios-disponibles/:doctor/:fecha", async (req, res) => {
+
+  const { doctor, fecha } = req.params;
+
+  try {
+
+    const pool = await sql.connect(dbConfig);
+
+    // CONSULTAR HORARIOS DEL DOCTOR
+    const result = await pool.request()
+      .input("doctor", sql.Int, doctor)
+      .input("fecha", sql.Date, fecha)
+      .query(`
+            SELECT HorarioInicio
+            FROM HorarioLaboral
+            WHERE IdDoctor = @doctor
+            AND CAST(Fecha AS DATE) = @fecha
+            AND EstatusHorario = 'Disponible'
+        `);
+
+    console.log(result.recordset);
+    // FORMATEAR HORAS
+    const disponibles = [
+        ...new Set(
+            result.recordset.map(item => {
+
+            const hora = new Date(item.HorarioInicio);
+
+            return hora.toLocaleTimeString("es-MX", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
+            });
+
+            })
+        )
+        ];
+
+    console.log(disponibles);
+
+    res.json(disponibles);
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      error: "Error obteniendo horarios"
+    });
+
+  }
+
+});
+
+// ==========================================
+// CONSULTORIO DEL DOCTOR
+// ==========================================
+app.get("/consultorio/:doctor", async (req, res) => {
+
+  const { doctor } = req.params;
+
+  try {
+
+    const pool = await sql.connect(dbConfig);
+
+    const result = await pool.request()
+      .input("doctor", sql.Int, doctor)
+      .query(`
+        SELECT TOP 1 NumeroConsultorio
+        FROM HorarioLaboral
+        WHERE IdDoctor = @doctor
+      `);
+
+    res.json(result.recordset[0]);
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      error: "Error obteniendo consultorio"
+    });
+
+  }
+
+});
+
+// ==========================================
+// AGENDAR CITA
+// ==========================================
+app.post("/agendar-cita", async (req, res) => {
+
+  const {
+    idPaciente,
+    doctorId,
+    fecha,
+    hora
+  } = req.body;
+
+  try {
+
+    const pool = await sql.connect(dbConfig);
+
+    // ==========================================
+    // OBTENER CONSULTORIO DEL DOCTOR
+    // ==========================================
+    const consultorioResult = await pool.request()
+      .input("doctor", sql.Int, doctorId)
+      .query(`
+        SELECT TOP 1 NumeroConsultorio
+        FROM HorarioLaboral
+        WHERE IdDoctor = @doctor
+      `);
+
+    if (consultorioResult.recordset.length === 0) {
+
+      return res.status(404).json({
+        error: "No se encontró consultorio para el doctor"
+      });
+
+    }
+
+    const consultorio =
+      consultorioResult.recordset[0].NumeroConsultorio;
+
+    // ==========================================
+    // VERIFICAR SI YA EXISTE ESA CITA
+    // ==========================================
+    const citaExistente = await pool.request()
+      .input("doctor", sql.Int, doctorId)
+      .input("fecha", sql.Date, fecha)
+      .input("hora", sql.VarChar, hora)
+      .query(`
+        SELECT *
+        FROM citaMedica
+        WHERE IdDoctor = @doctor
+        AND Fecha = @fecha
+        AND Hora = @hora
+      `);
+
+    if (citaExistente.recordset.length > 0) {
+
+      return res.status(400).json({
+        error: "Ese horario ya está ocupado"
+      });
+
+    }
+
+    // ==========================================
+    // VERIFICAR CONSULTORIO OCUPADO
+    // ==========================================
+    const consultorioOcupado = await pool.request()
+      .input("consultorio", sql.Int, consultorio)
+      .input("fecha", sql.Date, fecha)
+      .input("hora", sql.VarChar, hora)
+      .query(`
+        SELECT *
+        FROM citaMedica
+        WHERE Fecha = @fecha
+        AND Hora = @hora
+        AND NumeroConsultorio = @consultorio
+      `);
+
+    if (consultorioOcupado.recordset.length > 0) {
+
+      return res.status(400).json({
+        error: "El consultorio ya está ocupado"
+      });
+
+    }
+
+    // ==========================================
+    // INSERTAR CITA
+    // ==========================================
+    await pool.request()
+    .input("fecha", sql.Date, fecha)
+    .input("hora", sql.VarChar, hora)
+    .input("estado", sql.VarChar, "Activa")
+    .input("anticipo", sql.Int, 1)
+    .input("idPaciente", sql.Int, Number(idPaciente))
+    .input("idDoctor", sql.Int, Number(idDoctor))
+    .input("numeroConsultorio", sql.VarChar, numeroConsultorio)
+    .query(`
+        INSERT INTO CitaMedica
+        (
+        Fecha,
+        Hora,
+        Estado,
+        Anticipo,
+        IdPaciente,
+        IdDoctor,
+        NumeroConsultorio
+        )
+        VALUES
+        (
+        @fecha,
+        @hora,
+        @estado,
+        @anticipo,
+        @idPaciente,
+        @idDoctor,
+        @numeroConsultorio
+        )
+    `);
+
+    // ==========================================
+    // BLOQUEAR HORARIO
+    // ==========================================
+    await pool.request()
+      .input("doctor", sql.Int, Number(doctorId))
+      .input("fecha", sql.Date, fecha)
+      .input("hora", sql.Time, hora + ":00")
+      .query(`
+        UPDATE HorarioLaboral
+        SET EstatusHorario = 'Ocupado'
+        WHERE IdDoctor = @doctor
+        AND Fecha = @fecha
+        AND CAST(HorarioInicio AS TIME) = @hora
+      `);
+
+    // ==========================================
+    // RESPUESTA EXITOSA
+    // ==========================================
+    res.json({
+      mensaje: "Cita agendada correctamente",
+      datos: {
+        paciente: idPaciente,
+        doctor: doctorId,
+        fecha,
+        hora,
+        consultorio
+      }
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      error: "Error guardando la cita"
+    });
+
+  }
+
 });
 
 app.put("/cancelar-cita/:idCita", async (req, res) => {

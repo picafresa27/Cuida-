@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import API_URL from "../../../config/api";
 
@@ -34,6 +34,11 @@ export default function AgendarCitaVista() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [fechaCita, setFechaCita] = useState("");
 
+  const [horariosDisponibles, setHorariosDisponibles] = useState<string[]>([]);
+  const [horaSeleccionada, setHoraSeleccionada] = useState("");
+  const [consultorio, setConsultorio] = useState<string>("");
+  const [doctorId, setDoctorId] = useState<number | null>(null);
+
   // Estados para controlar qué menús desplegables están abiertos visualmente
   const [showDocDropdown, setShowDocDropdown] = useState(false);
   const [showHoraDropdown, setShowHoraDropdown] = useState(false);
@@ -45,7 +50,12 @@ export default function AgendarCitaVista() {
       const año = selectedDate.getFullYear();
       const mes = String(selectedDate.getMonth() + 1).padStart(2, '0');
       const dia = String(selectedDate.getDate()).padStart(2, '0');
-      setFechaCita(`${año}-${mes}-${dia}`);
+      const fechaSeleccionada = `${año}-${mes}-${dia}`;
+      setFechaCita(fechaSeleccionada);
+
+      if (doctorId) {
+        cargarHorarios(doctorId, fechaSeleccionada);
+      }
     }
   };
 
@@ -143,6 +153,118 @@ export default function AgendarCitaVista() {
 
     }
   };
+
+  const cargarHorarios = async (
+    idDoctor: number,
+    fecha: string
+  ) => {
+
+    try {
+
+      const response = await fetch(
+        `${API_URL}/horarios-disponibles/${idDoctor}/${fecha}`
+      );
+
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        setHorariosDisponibles(data);
+      } else {
+        setHorariosDisponibles([]);
+      }
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+  };
+
+  const cargarConsultorio = async (
+    idDoctor: number
+  ) => {
+
+    try {
+
+      const response = await fetch(
+        `${API_URL}/consultorio/${idDoctor}`
+      );
+
+      const data = await response.json();
+
+      setConsultorio(
+      data.NumeroConsultorio?.toString() || ""
+);
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+  };
+
+  const guardarCita = async () => {
+
+  if (
+    !idPaciente ||
+    !doctorId ||
+    !fechaCita ||
+    !horaSeleccionada
+  ) {
+    alert("Completa todos los campos");
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      `${API_URL}/agendar-cita`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          idPaciente,
+          doctorId,
+          fecha: fechaCita,
+          hora: horaSeleccionada
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+
+      alert(
+`Cita agendada correctamente
+
+Paciente: ${nombreCompleto}
+Doctor: ${doctorSeleccionado}
+Fecha: ${fechaCita}
+Hora: ${horaSeleccionada}
+Consultorio: ${consultorio}`
+      );
+
+      // RECARGAR HORARIOS
+      cargarHorarios(doctorId, fechaCita);
+
+    } else {
+
+      alert(data.error);
+
+    }
+
+  } catch (error) {
+
+    console.log(error);
+
+    alert("Error guardando la cita");
+
+  }
+
+};
 
 
   return (
@@ -282,9 +404,15 @@ export default function AgendarCitaVista() {
                         setDoctorSeleccionado(
                           `${doctor.Nombres} ${doctor.Apellidos}`
                         );
-
+                        setDoctorId(doctor.IdDoctor);
                         setShowDocDropdown(false);
 
+                        if (fechaCita) {
+                          cargarHorarios(
+                            doctor.IdDoctor,
+                            fechaCita
+                          );
+                        }
                       }}
                     >
 
@@ -322,25 +450,80 @@ export default function AgendarCitaVista() {
             <View style={styles.relativeContainer}>
               <TouchableOpacity 
                 style={styles.dropdownHeader} 
-                onPress={() => setShowHoraDropdown(!showHoraDropdown)}
+                onPress={() => {
+
+                  if (!doctorId) {
+                    alert("Selecciona un doctor primero");
+                    return;
+                  }
+
+                  if (!fechaCita) {
+                    alert("Selecciona una fecha primero");
+                    return;
+                  }
+
+                  setShowHoraDropdown(!showHoraDropdown);
+
+                }}
               >
-                <Text style={styles.placeholderText}>Selecciona un horario disponible...</Text>
+                <Text style={styles.placeholderText}>
+                  {horaSeleccionada || "Selecciona un horario disponible..."}
+                </Text>
                 <Ionicons name={showHoraDropdown ? "chevron-up" : "chevron-down"} size={20} color="#a0aec0" />
               </TouchableOpacity>
 
               {showHoraDropdown && (
-                <View style={styles.floatingList}>
-                  <TouchableOpacity style={styles.floatingItem} onPress={() => setShowHoraDropdown(false)}>
-                    <Text style={styles.itemTexto}>09:00 AM</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.floatingItem} onPress={() => setShowHoraDropdown(false)}>
-                    <Text style={styles.itemTexto}>11:30 AM</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.floatingItem, { borderBottomWidth: 0 }]} onPress={() => setShowHoraDropdown(false)}>
-                    <Text style={styles.itemTexto}>04:00 PM</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+              <View style={styles.floatingList}>
+
+                {horariosDisponibles.length === 0 ? (
+
+                  <View style={styles.floatingItem}>
+                    <Text
+                      style={[
+                        styles.itemTexto,
+                        {
+                          color: "#e53e3e",
+                          textAlign: "center",
+                          fontWeight: "600"
+                        }
+                      ]}
+                    >
+                      No hay horarios disponibles para esta fecha
+                    </Text>
+                  </View>
+
+                ) : (
+
+                  horariosDisponibles.map((hora, index) => (
+
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.floatingItem}
+                      onPress={() => {
+
+                        setHoraSeleccionada(hora);
+
+                        setShowHoraDropdown(false);
+
+                        if (doctorId) {
+                          cargarConsultorio(doctorId);
+                        }
+
+                      }}
+                    >
+
+                      <Text style={styles.itemTexto}>
+                        {hora}
+                      </Text>
+
+                    </TouchableOpacity>
+
+                  ))
+
+                )}
+
+              </View>
+            )}
             </View>
 
             {/* NÚMERO DE CONSULTORIO AUTOMÁTICO */}
@@ -349,15 +532,20 @@ export default function AgendarCitaVista() {
               <Ionicons name="business-outline" size={22} color="#3A5BA0" style={{ marginRight: 10 }} />
               <TextInput 
                 style={[styles.input, styles.disabledInput, { flex: 1, borderWidth: 0, backgroundColor: 'transparent', padding: 0 }]} 
-                placeholder="Se asignará automáticamente según el doctor" 
+                value={consultorio?.toString()}
+                placeholder="Se asignará automáticamente según el doctor"
                 editable={false} 
               />
             </View>
           </View>
 
           {/* BOTÓN REGISTRAR CITA */}
-          <TouchableOpacity style={styles.button} activeOpacity={0.8}>
-            <Text style={styles.buttonText}>Confirmar y Agendar Cita</Text>
+          <TouchableOpacity
+            style={styles.button}
+            activeOpacity={0.8}
+            onPress={guardarCita}
+          >
+          <Text style={styles.buttonText}>Confirmar y Agendar Cita</Text>
           </TouchableOpacity>
 
         </ScrollView>
